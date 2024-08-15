@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int            @id @default(autoincrement())
+  nom              String
+  prenom           String
+  email            String         @unique
+  telephone        String         @unique
+  type             String
+  credit           Int            @default(3)
+  password         String
+  votesReceived    Vote[]         @relation("reçus")
+  votesCast        Vote[]         @relation("effectue")
+  followers        Follower[]     @relation("follower")
+  followings       Follower[]     @relation("following")
+  notifications    Notification[]
+  messagesSent     Message[]      @relation("sent")
+  messagesReceived Message[]      @relation("received")
+  sharedPosts      Post[]         @relation("SharedPosts")
+  posts            Post[]         @relation("UserPosts")
+  favoris          Post[]         @relation("UserFavorites")
+  Comment          Comment[]
+  LikeDislike      LikeDislike[]
+  Signale          Signale[]
+  Viewers          Viewers[]
+  @@map("user")
+}
+
+model Vote {
+  id       Int  @id @default(autoincrement())
+  idVoteur Int
+  userId   Int
+  voteur   User @relation("reçus", fields: [idVoteur], references: [id], map: "Vote_voteur_fkey")
+  user     User @relation("effectue", fields: [userId], references: [id], map: "Vote_user_fkey")
+  @@map("vote")
+}
+
+model Follower {
+  id         Int  @id @default(autoincrement())
+  userId     Int
+  followerId Int
+  user       User @relation("following", fields: [userId], references: [id], map: "Follower_user_fkey")
+  follower   User @relation("follower", fields: [followerId], references: [id], map: "Follower_follower_fkey")
+  @@map("follower")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], map: "Notification_user_fkey")
+  @@map("notification")
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  content    String
+  createdAt  DateTime @default(now())
+  sender     User     @relation("sent", fields: [senderId], references: [id], map: "Message_sender_fkey")
+  receiver   User     @relation("received", fields: [receiverId], references: [id], map: "Message_receiver_fkey")
+  @@map("message")
+}
+
+model Post {
+  id           Int          @id @default(autoincrement())
+  content      String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  contenuMedia Media[]
+  likeDislike  LikeDislike[]
+  comment      Comment[]
+  signale      Signale[]
+  viewers      Viewers[]
+  idUser       Int
+  user         User         @relation("UserPosts", fields: [idUser], references: [id], map: "Post_user_fkey")
+  sharedBy     User[]       @relation("SharedPosts")
+  favoritedBy  User[]       @relation("UserFavorites")
+  @@map("post")
+}
+
+model Media {
+  id     Int    @id @default(autoincrement())
+  url    String
+  postId Int
+  post   Post   @relation(fields: [postId], references: [id], map: "Media_post_fkey")
+  @@map("media")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], map: "Comment_user_fkey")
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], map: "Comment_post_fkey")
+  @@map("comment")
+}
+
+model LikeDislike {
+  id     Int    @id @default(autoincrement())
+  type   String
+  userId Int
+  postId Int
+  user   User   @relation(fields: [userId], references: [id], map: "LikeDislike_user_fkey")
+  post   Post   @relation(fields: [postId], references: [id], map: "LikeDislike_post_fkey")
+  @@map("likeDislike")
+}
+
+model Signale {
+  id     Int    @id @default(autoincrement())
+  motif  String
+  userId Int
+  postId Int
+  user   User   @relation(fields: [userId], references: [id], map: "Signale_user_fkey")
+  post   Post   @relation(fields: [postId], references: [id], map: "Signale_post_fkey")
+  @@map("signale")
+}
+
+model Viewers {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  postId Int
+  user   User @relation(fields: [userId], references: [id], map: "Viewers_user_fkey")
+  post   Post @relation(fields: [postId], references: [id], map: "Viewers_post_fkey")
+  @@map("viewers")
+}
