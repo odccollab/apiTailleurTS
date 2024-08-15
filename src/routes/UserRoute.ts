@@ -5,7 +5,7 @@ import Middleware from '../middlewares/Middleware';
 const router:Router = express.Router();
 
 //create User ça prend { nom, prenom, role, password, telephone, mail,passconfirm }
-router.post('/create',Middleware.validateData("register"),  UserController2.createUser);
+router.post('/create',Middleware.validateData("register"),  UserController.createUser);
 //avoir profile du user connected
 router.get('/profile',Middleware.verifyToken, UserController.profile);
 //login user ça prend { mail, password }

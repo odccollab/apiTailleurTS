@@ -19,9 +19,9 @@ router.delete('/:id', Middleware_1.default.verifyToken, PostController_1.default
 //ajouter un commentaire les variable requis 
 // const { postId, commentId } = req.params;
 //     const { text } = req.body;
-router.post('/:postId/comment', Middleware_1.default.verifyToken, validateData('comment'), postController.addComment);
+router.post('/:postId/comment', Middleware_1.default.verifyToken, validateData('comment'), PostController_1.default.addComment);
 //recuperer tous les commentaires d'un post 
-router.get('/:postId/comment', postController.getComments);
+router.get('/:postId/comment', PostController_1.default.getComments);
 //modifier un commentaire  
 // const { postId, commentId } = req.params;
 //     const { text } = req.body;
@@ -31,7 +31,7 @@ router.delete('/:postId/comment/:commentId', PostController_1.default.deleteComm
 //story 
 router.post('/createStory', Middleware_1.default.verifyToken, Middleware_1.default.validateData("post"), Middleware_1.default.canPost, PostController_1.default.createStory);
 // Nouvelles routes pour les vues 
-router.get('/:postId/view', Middleware_1.default.verifyToken, postController.incrementViews);
+router.get('/:postId/view', Middleware_1.default.verifyToken, PostController_1.default.incrementViews);
 //voilr les vue d'un post 
 router.get('/:postId/views', Middleware_1.default.verifyToken, PostController_1.default.getViews);
 //file actu 

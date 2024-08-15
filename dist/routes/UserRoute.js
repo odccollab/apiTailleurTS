@@ -8,7 +8,7 @@ const UserController_1 = __importDefault(require("../controllers/UserController"
 const Middleware_1 = __importDefault(require("../middlewares/Middleware"));
 const router = express_1.default.Router();
 //create User ça prend { nom, prenom, role, password, telephone, mail,passconfirm }
-router.post('/create', Middleware_1.default.validateData("register"), UserController2.createUser);
+router.post('/create', Middleware_1.default.validateData("register"), UserController_1.default.createUser);
 //avoir profile du user connected
 router.get('/profile', Middleware_1.default.verifyToken, UserController_1.default.profile);
 //login user ça prend { mail, password }

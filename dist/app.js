@@ -5,15 +5,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const client_1 = require("@prisma/client");
-// import userRoutes from './routes/UserRoute';
-// import postRoutes from './routes/PostRoute';
+const UserRoute_1 = __importDefault(require("./routes/UserRoute"));
+const PostRoute_1 = __importDefault(require("./routes/PostRoute"));
 const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
 const PORT = process.env.PORT || 3000;
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
-// app.use("/users",userRoutes)
-// app.use("/posts",postRoutes)
+app.use("/users", UserRoute_1.default);
+app.use("/posts", PostRoute_1.default);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // app.post('/createUser', async (req: Request, res: Response) => {
 //   const { nom, email, password, prenom, telephone,type } = req.body;
