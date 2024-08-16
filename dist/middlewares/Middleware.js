@@ -42,7 +42,7 @@ class Middleware {
             var _a;
             try {
                 const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-                const user = yield User_1.default.findUnique(userId);
+                const user = yield User_1.default.findUnique({ id: userId });
                 if (!user)
                     return res.status(404).json({ error: 'User not found' });
                 if (user.credit < 1) {
@@ -63,7 +63,7 @@ class Middleware {
             }
             const { error } = schema.safeParse(req.body);
             if (error) {
-                return res.status(400).json({ error: error.errors[0].message });
+                return res.status(400).json({ error: error.errors });
             }
             next();
         };
