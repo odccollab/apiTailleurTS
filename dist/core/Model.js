@@ -28,24 +28,39 @@ class Model {
             return this.prismaModel.create({ data });
         });
     }
-    findUnique(args) {
+    findUnique(whereInput) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.prismaModel.findUnique(args);
+            return this.prismaModel.findUnique({
+                where: whereInput
+            });
         });
     }
-    findMany(args) {
+    findMany(whereInput, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.prismaModel.findMany(args);
+            return this.prismaModel.findMany(Object.assign({ where: whereInput }, options));
         });
     }
-    update(args) {
+    delete(whereInput) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.prismaModel.update(args);
+            return this.prismaModel.delete({
+                where: whereInput
+            });
         });
     }
-    delete(args) {
+    update(whereInput, dataInput) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.prismaModel.delete(args);
+            return this.prismaModel.update({
+                where: whereInput,
+                data: dataInput
+            });
+        });
+    }
+    updateMany(whereInput, dataInput) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.prismaModel.updateMany({
+                where: whereInput,
+                data: dataInput
+            });
         });
     }
 }

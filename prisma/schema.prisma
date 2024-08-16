@@ -16,7 +16,7 @@ model User {
   id               Int            @id @default(autoincrement())
   nom              String
   prenom           String
-  email            String         @unique
+  mail             String         @unique
   telephone        String         @unique
   type             String
   credit           Int            @default(3)
@@ -79,9 +79,10 @@ model Message {
 
 model Post {
   id           Int          @id @default(autoincrement())
-  content      String
+  contenu      String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+  expireAt     DateTime?    
   contenuMedia Media[]
   likeDislike  LikeDislike[]
   comment      Comment[]

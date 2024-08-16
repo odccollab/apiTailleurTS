@@ -21,22 +21,39 @@ export default class Model {
     }
 
     async create(data: any) {
-        return this.prismaModel.create({ data });
+        return this.prismaModel.create( {data} );
     }
-
-    async findUnique(args: any) {
-        return this.prismaModel.findUnique(args);
+    async findUnique(whereInput: any) {
+        return this.prismaModel.findUnique({
+            where: whereInput
+        });
     }
-
-    async findMany(args: any) {
-        return this.prismaModel.findMany(args);
+    async findMany(whereInput?: any, options?: any) {
+        return this.prismaModel.findMany({
+            where: whereInput,
+            ...options
+        });
     }
-
-    async update(args: any) {
-        return this.prismaModel.update(args);
+    
+    async delete(whereInput: any) {
+        return this.prismaModel.delete({
+            where: whereInput
+        });
     }
-
-    async delete(args: any) {
-        return this.prismaModel.delete(args);
+    
+    async update(whereInput: any, dataInput: any) {
+        return this.prismaModel.update({
+            where: whereInput,
+            data: dataInput
+        });
     }
+    
+    async updateMany(whereInput: any, dataInput: any) {
+        return this.prismaModel.updateMany({
+            where: whereInput,
+            data: dataInput
+        });
+        
+    }
+    
 }
