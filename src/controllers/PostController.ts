@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma';
+import { log } from 'console';
 
 export default class PostController {
 
@@ -78,4 +79,124 @@ export default class PostController {
             console.error("Error deleting expired stories:", err);
         }
     }
+
+    //---------------------------SIGNALE_POST----------------------------------
+    static async signalPost(req: Request, res: Response): Promise<Response> {
+        const { motif, postId } = req.body;
+    
+        try {
+          if (!motif || !postId) {
+            return res.status(400).send('Veuillez remplir tous les champs');
+          }
+    
+          // Vérifier si l'utilisateur est connecté (supposons que req.user est défini)
+          const userId = req.user?.id;
+          console.log(userId);
+          
+          if (!userId) {
+            return res.status(404).send("Vous n'êtes pas connecté");
+          }
+    
+          const user = await prisma.user.findUnique({ where: { id: Number(userId) } });
+    
+          if (!user) {
+            return res.status(404).send("Utilisateur non trouvé");
+          }
+    
+          // Vérifier si le post existe
+          const post = await prisma.post.findUnique({ where: { id: Number(postId) } });
+    
+    
+          if (!post) {
+            return res.status(404).send("Post non trouvé");
+          }
+    
+          // Vérifier si l'utilisateur a déjà signalé le post
+          const signalExists = await prisma.signale.findFirst({
+            where: { userId: Number(userId), postId: Number(postId) }
+          });
+    
+          if (signalExists) {
+            return res.status(400).send("Vous avez déjà signalé ce post");
+          }
+    
+           if (post.expireAt === null) {
+            await prisma.signale.create({
+              data: { motif, userId: Number(userId), postId: Number(postId) }
+            });
+    
+            const signalCount = await prisma.signale.count({
+              where: { postId: Number(postId) }
+            });
+    
+            if (signalCount > 5) {
+              await prisma.post.delete({ where: { id: Number(postId) } });
+              // Ajouter une notification ici si nécessaire
+              return res.json({ message: "Post supprimé en raison de trop de signalements" });
+            }
+    
+            return res.json({ message: "Post signalé avec succès" ,data:post});
+          } else {
+            return res.status(400).send("Ce post est expiré et ne peut pas être signalé");
+          }
+        }catch (err: unknown) {
+          if (typeof err === 'object' && err !== null && 'message' in err) {
+            const errorMessage = (err as { message: string }).message;
+            console.error(errorMessage);
+          } else {
+            console.error('Erreur inconnue');
+          }
+          return res.status(500).send("Erreur serveur");
+        }
+      }
+
+      //--------------------------Search_User_Posts------------------------
+  static async findUserOrPost(req: Request, res: Response): Promise<Response> {
+    const { value } = req.body;
+
+    try {
+      if (!value) {
+        return res.status(400).json({ message: 'Veuillez entrer une valeur de recherche' });
+      }
+
+      const users = await prisma.user.findMany({
+        where: {
+          OR: [
+              { nom: { contains: value } },
+              { prenom: { contains: value} }
+          ]
+        }
+      });
+      
+      const posts = await prisma.post.findMany({
+        where: {
+          AND: [
+            { contenu: { contains: value } },
+            { expireAt: null }
+          ]
+        }
+      });
+      
+console.log(users,posts);
+
+      if (users.length === 0 && posts.length === 0) {
+        return res.status(404).json({ message: 'Aucun résultat trouvé', Data: null });
+      }
+
+      return res.json({
+        message: 'Résultats trouvés',
+        users,
+        posts
+      });
+    }catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'message' in err) {
+        const errorMessage = (err as { message: string }).message;
+        console.error(errorMessage);
+      } else {
+        console.error('Erreur inconnue');
+      }
+      return res.status(500).send("Erreur serveur");
+    }
+  }
+
 }

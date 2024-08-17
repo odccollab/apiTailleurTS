@@ -3,7 +3,16 @@ import { Request, Response } from 'express';
 import prisma from "../prisma";
 import Utils from "../utils/utils";
 import UserModel from "../models/User";
-
+import dotenv from "dotenv"
+// {
+//   "nom":"sidy",
+//    "prenom":"diop",
+//     "mail":"sididiop53@gmail.com",
+//      "password":"passer123",
+//       "passconfirm":"passer123",
+//        "telephone":"784316538",
+//         "type":"Tailleur"
+// } 
 export default class UserController{
     static async loginUser(req: Request, res: Response): Promise<void> {
         const { mail, password } = req.body;
@@ -40,7 +49,7 @@ export default class UserController{
         }
       }
       static async createUser(req: Request, res: Response): Promise<void> {
-        const { nom, prenom, mail, password, passconfirm, telephone, type } = req.body;
+        const { nom, prenom, mail, password, passconfirm, telephone, type,image } = req.body;
 
         // Check if passwords match
         if (password !== passconfirm) {
@@ -73,6 +82,7 @@ export default class UserController{
                     password: hashedPassword,
                     telephone,
                     type,
+                    image,
                     credit
                 },
             });

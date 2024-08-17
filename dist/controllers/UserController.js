@@ -16,6 +16,15 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = __importDefault(require("../prisma"));
 const utils_1 = __importDefault(require("../utils/utils"));
 const User_1 = __importDefault(require("../models/User"));
+// {
+//   "nom":"sidy",
+//    "prenom":"diop",
+//     "mail":"sididiop53@gmail.com",
+//      "password":"passer123",
+//       "passconfirm":"passer123",
+//        "telephone":"784316538",
+//         "type":"Tailleur"
+// } 
 class UserController {
     static loginUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -47,7 +56,7 @@ class UserController {
     }
     static createUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { nom, prenom, mail, password, passconfirm, telephone, type } = req.body;
+            const { nom, prenom, mail, password, passconfirm, telephone, type, image } = req.body;
             // Check if passwords match
             if (password !== passconfirm) {
                 res.status(400).json('Les mots de passe ne correspondent pas');
@@ -75,6 +84,7 @@ class UserController {
                         password: hashedPassword,
                         telephone,
                         type,
+                        image,
                         credit
                     },
                 });

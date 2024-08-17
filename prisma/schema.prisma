@@ -21,6 +21,7 @@ model User {
   type             String
   credit           Int            @default(3)
   password         String
+  image            String?
   votesReceived    Vote[]         @relation("reçus")
   votesCast        Vote[]         @relation("effectue")
   followers        Follower[]     @relation("follower")
