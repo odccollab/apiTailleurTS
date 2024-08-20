@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const prisma_1 = __importDefault(require("../prisma"));
+const UserController_1 = __importDefault(require("./UserController"));
 class PostController {
     static createPost(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -94,7 +95,6 @@ class PostController {
                 }
                 // Vérifier si l'utilisateur est connecté (supposons que req.user est défini)
                 const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-                console.log(userId);
                 if (!userId) {
                     return res.status(404).send("Vous n'êtes pas connecté");
                 }
@@ -121,9 +121,11 @@ class PostController {
                     const signalCount = yield prisma_1.default.signale.count({
                         where: { postId: Number(postId) }
                     });
-                    if (signalCount > 5) {
+                    if (signalCount >= 2) {
+                        yield PostController.deleteEntities(Number(postId));
                         yield prisma_1.default.post.delete({ where: { id: Number(postId) } });
                         // Ajouter une notification ici si nécessaire
+                        yield UserController_1.default.addNotification(Number(userId), "Ce post est supprimé en raison de trop de signalement");
                         return res.json({ message: "Post supprimé en raison de trop de signalements" });
                     }
                     return res.json({ message: "Post signalé avec succès", data: post });
@@ -168,14 +170,13 @@ class PostController {
                         ]
                     }
                 });
-                console.log(users, posts);
                 if (users.length === 0 && posts.length === 0) {
                     return res.status(404).json({ message: 'Aucun résultat trouvé', Data: null });
                 }
                 return res.json({
                     message: 'Résultats trouvés',
-                    users,
-                    posts
+                    users: users,
+                    posts: posts
                 });
             }
             catch (err) {
@@ -187,6 +188,27 @@ class PostController {
                     console.error('Erreur inconnue');
                 }
                 return res.status(500).send("Erreur serveur");
+            }
+        });
+    }
+    //--------------------------------Delete_Entities------------
+    static deleteEntities(postId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // Création des actions de suppression pour les entités liées
+                const deleteActions = [
+                    prisma_1.default.signale.deleteMany({ where: { postId } }),
+                    prisma_1.default.comment.deleteMany({ where: { postId } }),
+                    prisma_1.default.likeDislike.deleteMany({ where: { postId } }),
+                    prisma_1.default.media.deleteMany({ where: { postId } }),
+                    prisma_1.default.viewers.deleteMany({ where: { postId } }),
+                ];
+                // Exécution de toutes les actions de suppression en parallèle
+                yield Promise.all(deleteActions);
+            }
+            catch (error) {
+                console.error('Erreur lors de la suppression des entités liées:', error);
+                throw new Error('Échec de la suppression des entités liées');
             }
         });
     }

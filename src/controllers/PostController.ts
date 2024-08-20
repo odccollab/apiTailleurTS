@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma';
 import { log } from 'console';
-
+import { number } from 'zod';
+import UserController from './UserController';
 export default class PostController {
 
     static async createPost(req: Request, res: Response): Promise<void> {
@@ -91,7 +92,7 @@ export default class PostController {
     
           // Vérifier si l'utilisateur est connecté (supposons que req.user est défini)
           const userId = req.user?.id;
-          console.log(userId);
+          
           
           if (!userId) {
             return res.status(404).send("Vous n'êtes pas connecté");
@@ -128,10 +129,12 @@ export default class PostController {
             const signalCount = await prisma.signale.count({
               where: { postId: Number(postId) }
             });
-    
-            if (signalCount > 5) {
+   
+            if (signalCount >= 2) {
+                await PostController.deleteEntities(Number(postId));
               await prisma.post.delete({ where: { id: Number(postId) } });
               // Ajouter une notification ici si nécessaire
+              await UserController.addNotification(Number(userId),"Ce post est supprimé en raison de trop de signalement")
               return res.json({ message: "Post supprimé en raison de trop de signalements" });
             }
     
@@ -177,16 +180,14 @@ export default class PostController {
         }
       });
       
-console.log(users,posts);
-
       if (users.length === 0 && posts.length === 0) {
         return res.status(404).json({ message: 'Aucun résultat trouvé', Data: null });
       }
 
       return res.json({
         message: 'Résultats trouvés',
-        users,
-        posts
+        users:users,
+        posts:posts
       });
     }catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'message' in err) {
@@ -199,4 +200,28 @@ console.log(users,posts);
     }
   }
 
+  //--------------------------------Delete_Entities------------
+  static async deleteEntities(postId: number): Promise<void> {
+    try {
+      // Création des actions de suppression pour les entités liées
+      const deleteActions = [
+        prisma.signale.deleteMany({ where: { postId } }),
+        prisma.comment.deleteMany({ where: { postId } }),
+        prisma.likeDislike.deleteMany({ where: { postId } }),
+        prisma.media.deleteMany({ where: { postId } }),
+        prisma.viewers.deleteMany({ where: { postId } }),
+      ];
+
+      // Exécution de toutes les actions de suppression en parallèle
+      await Promise.all(deleteActions);
+    } catch (error) {
+      console.error('Erreur lors de la suppression des entités liées:', error);
+      throw new Error('Échec de la suppression des entités liées');
+    }
+  }
+
 }
+
+
+
+

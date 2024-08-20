@@ -28,7 +28,7 @@ router.post('/login2', Middleware_1.default.validateData("login"), UserControlle
 // //lister les favoris du user connecté
 // router.get('/favorite',Middleware.verifyToken, UserController.getUserFavorites);
 // //ajouter ou enlever vote pour un post ça prend  {  voteForUserId }
-// router.post('/vote',Middleware.verifyToken, UserController.manageVotes);
+router.post('/vote', Middleware_1.default.verifyToken, UserController_1.default.manageVotes);
 // //avoir les messages pour le user connecte
 // router.get('/messages', Middleware.verifyToken, UserController.getMessages);
 // //envoyer message  ça prend { receiver, content } 
