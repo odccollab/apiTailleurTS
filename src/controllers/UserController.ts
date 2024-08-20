@@ -3,7 +3,17 @@ import { Request, Response } from 'express';
 import prisma from "../prisma";
 import Utils from "../utils/utils";
 import UserModel from "../models/User";
-
+import dotenv from "dotenv"
+// {
+//   "nom":"fallou",
+//    "prenom":"sylla",
+//     "mail":"fallou53@gmail.com",
+//      "password":"passer123",
+//      "passconfirm":"passer123",
+//       "telephone":"754378671",
+//       "type":"Client",
+//       "image":"fs.png"
+// } 
 export default class UserController{
     static async loginUser(req: Request, res: Response): Promise<void> {
         const { mail, password } = req.body;
@@ -39,8 +49,9 @@ export default class UserController{
           res.status(500).json('Server Error');
         }
       }
+      //-------------------------CREATE_USER------------------------
       static async createUser(req: Request, res: Response): Promise<void> {
-        const { nom, prenom, mail, password, passconfirm, telephone, type } = req.body;
+        const { nom, prenom, mail, password, passconfirm, telephone, type,image } = req.body;
 
         // Check if passwords match
         if (password !== passconfirm) {
@@ -73,6 +84,7 @@ export default class UserController{
                     password: hashedPassword,
                     telephone,
                     type,
+                    image,
                     credit
                 },
             });
@@ -87,5 +99,64 @@ export default class UserController{
             res.status(500).json('Erreur du serveur');
         }
     }
-      
+
+    //----------------ADD_NOTIFICATION----------------------------
+    static async addNotification(userId: number, content: string): Promise<void> {
+      try {
+        // Crée une nouvelle notification pour l'utilisateur
+        await prisma.notification.create({
+          data: {
+            userId,
+            content,
+          }
+        });
+      } catch (err) {
+        console.error('Erreur lors de l\'ajout de la notification:', err);
+      }
+    }
+  
+      //---------------------------------------VOTE-----------------------------------------
+  static async manageVotes(req: Request, res: Response): Promise<Response> {
+    const {voteForUserId} = req.body;
+    const userId = Number(req.user?.id); // Récupération de l'ID de l'utilisateur depuis le middleware d'authentification
+
+    try {
+      // Vérifier l'existence de l'utilisateur à voter
+      const userToVote = await prisma.user.findUnique({ where: { id: voteForUserId } });
+      if (!userToVote) {
+        return res.status(404).send("L'utilisateur n'existe pas");
+      }
+
+      // Vérifier que l'utilisateur ne vote pas pour lui-même
+      if (userId === voteForUserId) {
+        return res.status(400).send("Vous ne pouvez pas voter pour vous-même");
+      }
+
+      // Trouver le vote existant
+      const existingVote = await prisma.vote.findFirst({
+        where: { idVoteur: userId, userId: voteForUserId },
+      });
+
+      if (!existingVote) {
+        // L'utilisateur n'a pas encore voté, donc on ajoute le vote
+        await prisma.vote.create({
+          data: {
+            idVoteur: userId,
+            userId: voteForUserId,
+          },
+        });
+        return res.json({ message: "Vous avez voté pour cet utilisateur" });
+      } else {
+        // L'utilisateur a déjà voté, donc on supprime le vote
+        await prisma.vote.delete({
+          where: { id: existingVote.id },
+        });
+        return res.json({ message: "Vous avez retiré votre vote" });
+      }
+    } catch (err) {
+      console.error((err as Error).message);
+      return res.status(500).send('Erreur du serveur');
+    }
+  }
+
 }

@@ -45,7 +45,7 @@ router.post('/create', Middleware_1.default.verifyToken, Middleware_1.default.va
 // router.post('/share/facebook', PostController.shareOnFacebook);
 // router.post('/share/whatsapp', PostController.shareOnWhatsApp);
 // //signale un use
-//  router.post('/signale',Middleware.verifyToken, PostController.signalPost);
+router.post('/signale', Middleware_1.default.verifyToken, PostController_1.default.signalPost);
 //  //recherche utilisateur ou post ça prend  {value}
-//  router.get('/find', PostController.findUserOrPost);
+router.get('/find', PostController_1.default.findUserOrPost);
 exports.default = router;

@@ -21,6 +21,7 @@ model User {
   type             String
   credit           Int            @default(3)
   password         String
+  image            String?
   votesReceived    Vote[]         @relation("reçus")
   votesCast        Vote[]         @relation("effectue")
   followers        Follower[]     @relation("follower")
@@ -142,4 +143,15 @@ model Viewers {
   user   User @relation(fields: [userId], references: [id], map: "Viewers_user_fkey")
   post   Post @relation(fields: [postId], references: [id], map: "Viewers_post_fkey")
   @@map("viewers")
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  postId    Int
+  user      User     @relation(fields: [userId], references: [id],map: "Favorite_user_fkey")
+  post      Post     @relation(fields: [postId], references: [id],map: "Favorite_post_fkey")
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId]) // Un utilisateur ne peut ajouter un post qu'une seule fois aux favoris
 }
