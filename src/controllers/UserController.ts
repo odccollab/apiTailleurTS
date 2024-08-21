@@ -34,7 +34,7 @@ export default class UserController{
           const token = jwt.sign(
             {
               id: user.id,
-              role: user.type,
+              type: user.type,
               nom: user.nom,
               prenom: user.prenom,
               image: user.image // Assuming 'i' refers to a photo field, adjust if needed
@@ -158,5 +158,151 @@ export default class UserController{
       return res.status(500).send('Erreur du serveur');
     }
   }
+  //------------------------------------ADD_Follower--------------------------------
+  static async addFollower(req: Request, res: Response): Promise<Response> {
+    const { followedId } = req.body;
+  
+    if (!followedId) {
+      return res.status(400).send({ error: 'Invalid followedId' });
+    }
+  
+    console.log('followedId:', followedId);
+  
+    try {
+      // Trouver l'utilisateur connecté
+      const userConnected = await prisma.user.findUnique({
+        where: { id: +req.user?.id! }
+      });
+  
+      const userToFollow = await prisma.user.findUnique({
+        where: { id: +followedId },
+        include: {
+          followers: {
+            select: {
+              followerId: true // Sélectionne uniquement les IDs des utilisateurs qui suivent cet utilisateur
+            }
+          }
+        }
+      });
+      
+      if (!userConnected) {
+        return res.status(404).send("User connected not found");
+      }
+  
+      if (!userToFollow) {
+        return res.status(404).send("User to follow not found");
+      }
+  
+      if (followedId === req.user?.id) {
+        return res.status(400).send("Vous ne pouvez pas vous suivre vous-même");
+      }
+  
+      // Vérification si l'utilisateur suit déjà
+      const alreadyFollowing = await prisma.follower.findFirst({
+        where: {
+          followerId: userConnected.id,
+          userId: +followedId
+        }
+      });
+  
+      if (alreadyFollowing) {
+        // Arrêter de suivre
+        await prisma.follower.delete({
+          where: {
+            id: alreadyFollowing.id
+          }
+        });
+        return res.status(200).send("Vous avez arrêté de suivre cet utilisateur");
+      }
+  
+      // Ajouter un nouveau follower
+      await prisma.follower.create({
+        data: {
+          followerId: userConnected.id,
+          userId: +followedId
+        }
+      });
+  
+      return res.json(userToFollow);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).send("Server Error");
+    }
+  }
+  //------------------------------------GET_FOLLOWERS--------------------------------
+  static async getFollowers(req: Request, res: Response): Promise<Response> {
+    const userConnected = await prisma.user.findUnique({
+      where: { id: Number(req.user?.id)},
+    });
 
+    if (req.user?.type !== 'tailleur') {
+      return res.status(403).json({ message: 'Vous devez être un tailleur pour avoir des followers' });
+    }
+
+    if (!userConnected) {
+      return res.status(404).send("User connected not found");
+    }
+
+    // Récupérer les followers de l'utilisateur connecté
+    const followers = await prisma.follower.findMany({
+      where: { userId: Number(req.user?.id) },
+      include: {
+        follower: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+            image: true,
+          },
+        },
+      },
+    });
+
+    //Formater les données pour la réponse
+    const formattedFollowers = followers.map((f:any) => ({
+      _id: f.follower.id,
+      nom: f.follower.nom,
+      prenom: f.follower.prenom,
+      image: f.follower.image,
+    }));
+    if(formattedFollowers.length == 0)
+      return res.json({message:"Actuellement, Vous n'avez de  followers",data:[]});
+    else
+    return res.json({message:"followers trouvés",data:formattedFollowers});
+  }
+
+  //------------------GET_Followings-----------------------------
+  static async getFollowings(req: Request, res: Response): Promise<Response> {
+    try {
+      const userConnected = await prisma.user.findUnique({
+        where: { id: Number(req.user?.id) },
+      });
+      console.log(userConnected);
+      if (!userConnected) {
+        return res.status(404).send("User connected not found");
+      }
+
+      // Récupérer les suivis de l'utilisateur connecté à partir de la table Follower
+      const followings = await prisma.follower.findMany({
+        where: { followerId: userConnected.id },
+        include: { user: true },
+      });
+
+      // Construire la liste des suivis avec les détails de l'utilisateur
+      const followingDetails = followings.map((following:any) => ({
+        _id: following.user.id,
+        nom: following.user.nom,
+        prenom: following.user.prenom,
+        image: following.user.image,
+      }));
+      if(followingDetails.length == 0)
+        return res.json({message:"Actuellement, Vous ne suivez personne"});
+      else
+      return res.json({data:followingDetails});
+    } catch (err) {
+      console.error((err as Error).message);
+      return res.status(500).send('Erreur du serveur');
+    }
+  }
 }
+

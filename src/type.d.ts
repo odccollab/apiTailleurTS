@@ -8,6 +8,7 @@ declare module 'express-serve-static-core' {
         nom: string;
         prenom: string;
         image: string;
+        type: string;
       };
     }
   }

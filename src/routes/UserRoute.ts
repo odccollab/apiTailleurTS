@@ -11,11 +11,11 @@ router.post('/create',Middleware.validateData("register"),  UserController.creat
 // //login user ça prend { mail, password }
 router.post('/login2',Middleware.validateData("login"), UserController.loginUser);
 //  //ajouter ou enlever un follower pour un user ça prend  {  followedId }
-// router.post('/follow',Middleware.verifyToken, UserController.addFollower);
+ router.post('/follow',Middleware.verifyToken, UserController.addFollower);
 // //lister les followers du user connecté
-// router.get('/followers', Middleware.verifyToken,UserController.getFollowers);
+router.get('/followers', Middleware.verifyToken,UserController.getFollowers);
 // //lister les utilisateurs qui sont followés par le user connecté
-// router.get('/followings',Middleware.verifyToken,UserController.getFollowings);
+ router.get('/followings',Middleware.verifyToken,UserController.getFollowings);
 // //achat credit  ça prend  {  amount }
 // router.post('/achatCredit', Middleware.verifyToken, UserController.rechargerCompte);
 // //changer la tailleur  ça prend  rien 
