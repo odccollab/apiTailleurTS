@@ -1,12 +1,15 @@
 import express, { Express } from 'express';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
+import swaggerSetup from './swagger'
+
 dotenv.config();
 
 import userRoutes from './routes/UserRoute';
 import postRoutes from './routes/PostRoute';
 
 const app: Express = express();
+swaggerSetup(app)
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 

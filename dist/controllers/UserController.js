@@ -17,7 +17,6 @@ const prisma_1 = __importDefault(require("../prisma"));
 const utils_1 = __importDefault(require("../utils/utils"));
 const User_1 = __importDefault(require("../models/User"));
 const PostController_1 = __importDefault(require("./PostController"));
-
 class UserController {
     static loginUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -81,7 +80,6 @@ class UserController {
                         type,
                         credit,
                         image
-
                     },
                 });
                 res.status(201).json(user);
@@ -495,6 +493,9 @@ class UserController {
             catch (error) {
                 console.error('Error fetching notifications:', error);
                 return res.status(500).json({ message: 'Internal server error' });
+            }
+        });
+    }
     //----------------ADD_NOTIFICATION----------------------------
     static addNotification(userId, content) {
         return __awaiter(this, void 0, void 0, function* () {
