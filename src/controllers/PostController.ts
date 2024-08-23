@@ -861,7 +861,6 @@ export default class PostController {
     }
   }
 
-  //--------------------------------Delete_Entities------------
-  
+ 
 
 }
