@@ -557,5 +557,144 @@ class UserController {
             }
         });
     }
+    //------------------------------------ADD_Follower--------------------------------
+    static addFollower(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            const { followedId } = req.body;
+            if (!followedId) {
+                return res.status(400).send({ error: 'Invalid followedId' });
+            }
+            console.log('followedId:', followedId);
+            try {
+                // Trouver l'utilisateur connecté
+                const userConnected = yield prisma_1.default.user.findUnique({
+                    where: { id: +((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) }
+                });
+                const userToFollow = yield prisma_1.default.user.findUnique({
+                    where: { id: +followedId },
+                    include: {
+                        followers: {
+                            select: {
+                                followerId: true // Sélectionne uniquement les IDs des utilisateurs qui suivent cet utilisateur
+                            }
+                        }
+                    }
+                });
+                if (!userConnected) {
+                    return res.status(404).send("User connected not found");
+                }
+                if (!userToFollow) {
+                    return res.status(404).send("User to follow not found");
+                }
+                if (followedId === ((_b = req.user) === null || _b === void 0 ? void 0 : _b.id)) {
+                    return res.status(400).send("Vous ne pouvez pas vous suivre vous-même");
+                }
+                // Vérification si l'utilisateur suit déjà
+                const alreadyFollowing = yield prisma_1.default.follower.findFirst({
+                    where: {
+                        followerId: userConnected.id,
+                        userId: +followedId
+                    }
+                });
+                if (alreadyFollowing) {
+                    // Arrêter de suivre
+                    yield prisma_1.default.follower.delete({
+                        where: {
+                            id: alreadyFollowing.id
+                        }
+                    });
+                    return res.status(200).send("Vous avez arrêté de suivre cet utilisateur");
+                }
+                // Ajouter un nouveau follower
+                yield prisma_1.default.follower.create({
+                    data: {
+                        followerId: userConnected.id,
+                        userId: +followedId
+                    }
+                });
+                return res.json(userToFollow);
+            }
+            catch (err) {
+                console.error(err);
+                return res.status(500).send("Server Error");
+            }
+        });
+    }
+    //------------------------------------GET_FOLLOWERS--------------------------------
+    static getFollowers(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b, _c;
+            const userConnected = yield prisma_1.default.user.findUnique({
+                where: { id: Number((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) },
+            });
+            if (((_b = req.user) === null || _b === void 0 ? void 0 : _b.type) !== 'tailleur') {
+                return res.status(403).json({ message: 'Vous devez être un tailleur pour avoir des followers' });
+            }
+            if (!userConnected) {
+                return res.status(404).send("User connected not found");
+            }
+            // Récupérer les followers de l'utilisateur connecté
+            const followers = yield prisma_1.default.follower.findMany({
+                where: { userId: Number((_c = req.user) === null || _c === void 0 ? void 0 : _c.id) },
+                include: {
+                    follower: {
+                        select: {
+                            id: true,
+                            nom: true,
+                            prenom: true,
+                            image: true,
+                        },
+                    },
+                },
+            });
+            //Formater les données pour la réponse
+            const formattedFollowers = followers.map((f) => ({
+                _id: f.follower.id,
+                nom: f.follower.nom,
+                prenom: f.follower.prenom,
+                image: f.follower.image,
+            }));
+            if (formattedFollowers.length == 0)
+                return res.json({ message: "Actuellement, Vous n'avez de  followers", data: [] });
+            else
+                return res.json({ message: "followers trouvés", data: formattedFollowers });
+        });
+    }
+    //------------------GET_Followings-----------------------------
+    static getFollowings(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            try {
+                const userConnected = yield prisma_1.default.user.findUnique({
+                    where: { id: Number((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) },
+                });
+                console.log(userConnected);
+                if (!userConnected) {
+                    return res.status(404).send("User connected not found");
+                }
+                // Récupérer les suivis de l'utilisateur connecté à partir de la table Follower
+                const followings = yield prisma_1.default.follower.findMany({
+                    where: { followerId: userConnected.id },
+                    include: { user: true },
+                });
+                // Construire la liste des suivis avec les détails de l'utilisateur
+                const followingDetails = followings.map((following) => ({
+                    _id: following.user.id,
+                    nom: following.user.nom,
+                    prenom: following.user.prenom,
+                    image: following.user.image,
+                }));
+                if (followingDetails.length == 0)
+                    return res.json({ message: "Actuellement, Vous ne suivez personne" });
+                else
+                    return res.json({ data: followingDetails });
+            }
+            catch (err) {
+                console.error(err.message);
+                return res.status(500).send('Erreur du serveur');
+            }
+        });
+    }
 }
 exports.default = UserController;

@@ -14,11 +14,11 @@ router.get('/profile', Middleware_1.default.verifyToken, UserController_1.defaul
 // //login user ça prend { mail, password }
 router.post('/login2', Middleware_1.default.validateData("login"), UserController_1.default.loginUser);
 //  //ajouter ou enlever un follower pour un user ça prend  {  followedId }
-// router.post('/follow',Middleware.verifyToken, UserController.addFollower);
+router.post('/follow', Middleware_1.default.verifyToken, UserController_1.default.addFollower);
 // //lister les followers du user connecté
-// router.get('/followers', Middleware.verifyToken,UserController.getFollowers);
+router.get('/followers', Middleware_1.default.verifyToken, UserController_1.default.getFollowers);
 // //lister les utilisateurs qui sont followés par le user connecté
-// router.get('/followings',Middleware.verifyToken,UserController.getFollowings);
+router.get('/followings', Middleware_1.default.verifyToken, UserController_1.default.getFollowings);
 // //achat credit  ça prend  {  amount }
 router.post('/achatCredit', Middleware_1.default.verifyToken, UserController_1.default.rechargerCompte);
 // //changer la tailleur  ça prend  rien 
