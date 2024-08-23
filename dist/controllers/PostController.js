@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const prisma_1 = __importDefault(require("../prisma"));
 const nodemailer_1 = __importDefault(require("nodemailer"));
+const UserController_1 = __importDefault(require("./UserController"));
 class PostController {
     static createPost(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -478,6 +479,131 @@ class PostController {
             }
             catch (error) {
                 res.status(500).json({ error: error });
+    //---------------------------SIGNALE_POST----------------------------------
+    static signalPost(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const { motif, postId } = req.body;
+            try {
+                if (!motif || !postId) {
+                    return res.status(400).send('Veuillez remplir tous les champs');
+                }
+                // Vérifier si l'utilisateur est connecté (supposons que req.user est défini)
+                const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+                if (!userId) {
+                    return res.status(404).send("Vous n'êtes pas connecté");
+                }
+                const user = yield prisma_1.default.user.findUnique({ where: { id: Number(userId) } });
+                if (!user) {
+                    return res.status(404).send("Utilisateur non trouvé");
+                }
+                // Vérifier si le post existe
+                const post = yield prisma_1.default.post.findUnique({ where: { id: Number(postId) } });
+                if (!post) {
+                    return res.status(404).send("Post non trouvé");
+                }
+                // Vérifier si l'utilisateur a déjà signalé le post
+                const signalExists = yield prisma_1.default.signale.findFirst({
+                    where: { userId: Number(userId), postId: Number(postId) }
+                });
+                if (signalExists) {
+                    return res.status(400).send("Vous avez déjà signalé ce post");
+                }
+                if (post.expireAt === null) {
+                    yield prisma_1.default.signale.create({
+                        data: { motif, userId: Number(userId), postId: Number(postId) }
+                    });
+                    const signalCount = yield prisma_1.default.signale.count({
+                        where: { postId: Number(postId) }
+                    });
+                    if (signalCount >= 2) {
+                        yield PostController.deleteEntities(Number(postId));
+                        yield prisma_1.default.post.delete({ where: { id: Number(postId) } });
+                        // Ajouter une notification ici si nécessaire
+                        yield UserController_1.default.addNotification(Number(userId), "Ce post est supprimé en raison de trop de signalement");
+                        return res.json({ message: "Post supprimé en raison de trop de signalements" });
+                    }
+                    return res.json({ message: "Post signalé avec succès", data: post });
+                }
+                else {
+                    return res.status(400).send("Ce post est expiré et ne peut pas être signalé");
+                }
+            }
+            catch (err) {
+                if (typeof err === 'object' && err !== null && 'message' in err) {
+                    const errorMessage = err.message;
+                    console.error(errorMessage);
+                }
+                else {
+                    console.error('Erreur inconnue');
+                }
+                return res.status(500).send("Erreur serveur");
+            }
+        });
+    }
+    //--------------------------Search_User_Posts------------------------
+    static findUserOrPost(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { value } = req.body;
+            try {
+                if (!value) {
+                    return res.status(400).json({ message: 'Veuillez entrer une valeur de recherche' });
+                }
+                const users = yield prisma_1.default.user.findMany({
+                    where: {
+                        OR: [
+                            { nom: { contains: value } },
+                            { prenom: { contains: value } }
+                        ]
+                    }
+                });
+                const posts = yield prisma_1.default.post.findMany({
+                    where: {
+                        AND: [
+                            { contenu: { contains: value } },
+                            { expireAt: null }
+                        ]
+                    }
+                });
+                if (users.length === 0 && posts.length === 0) {
+                    return res.status(404).json({ message: 'Aucun résultat trouvé', Data: null });
+                }
+                return res.json({
+                    message: 'Résultats trouvés',
+                    users: users,
+                    posts: posts
+                });
+            }
+            catch (err) {
+                if (typeof err === 'object' && err !== null && 'message' in err) {
+                    const errorMessage = err.message;
+                    console.error(errorMessage);
+                }
+                else {
+                    console.error('Erreur inconnue');
+                }
+                return res.status(500).send("Erreur serveur");
+            }
+        });
+    }
+    //--------------------------------Delete_Entities------------
+    static deleteEntities(postId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // Création des actions de suppression pour les entités liées
+                const deleteActions = [
+                    prisma_1.default.signale.deleteMany({ where: { postId } }),
+                    prisma_1.default.comment.deleteMany({ where: { postId } }),
+                    prisma_1.default.likeDislike.deleteMany({ where: { postId } }),
+                    prisma_1.default.media.deleteMany({ where: { postId } }),
+                    prisma_1.default.viewers.deleteMany({ where: { postId } }),
+                ];
+                // Exécution de toutes les actions de suppression en parallèle
+                yield Promise.all(deleteActions);
+            }
+            catch (error) {
+                console.error('Erreur lors de la suppression des entités liées:', error);
+                throw new Error('Échec de la suppression des entités liées');
             }
         });
     }
