@@ -46,6 +46,7 @@ class UserController {
             }
         });
     }
+    //-------------------------CREATE_USER------------------------
     static createUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { nom, prenom, mail, password, passconfirm, telephone, type, image } = req.body;
@@ -492,6 +493,67 @@ class UserController {
             catch (error) {
                 console.error('Error fetching notifications:', error);
                 return res.status(500).json({ message: 'Internal server error' });
+            }
+        });
+    }
+    //----------------ADD_NOTIFICATION----------------------------
+    static addNotification(userId, content) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // Crée une nouvelle notification pour l'utilisateur
+                yield prisma_1.default.notification.create({
+                    data: {
+                        userId,
+                        content,
+                    }
+                });
+            }
+            catch (err) {
+                console.error('Erreur lors de l\'ajout de la notification:', err);
+            }
+        });
+    }
+    //---------------------------------------VOTE-----------------------------------------
+    static manageVotes(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const { voteForUserId } = req.body;
+            const userId = Number((_a = req.user) === null || _a === void 0 ? void 0 : _a.id); // Récupération de l'ID de l'utilisateur depuis le middleware d'authentification
+            try {
+                // Vérifier l'existence de l'utilisateur à voter
+                const userToVote = yield prisma_1.default.user.findUnique({ where: { id: voteForUserId } });
+                if (!userToVote) {
+                    return res.status(404).send("L'utilisateur n'existe pas");
+                }
+                // Vérifier que l'utilisateur ne vote pas pour lui-même
+                if (userId === voteForUserId) {
+                    return res.status(400).send("Vous ne pouvez pas voter pour vous-même");
+                }
+                // Trouver le vote existant
+                const existingVote = yield prisma_1.default.vote.findFirst({
+                    where: { idVoteur: userId, userId: voteForUserId },
+                });
+                if (!existingVote) {
+                    // L'utilisateur n'a pas encore voté, donc on ajoute le vote
+                    yield prisma_1.default.vote.create({
+                        data: {
+                            idVoteur: userId,
+                            userId: voteForUserId,
+                        },
+                    });
+                    return res.json({ message: "Vous avez voté pour cet utilisateur" });
+                }
+                else {
+                    // L'utilisateur a déjà voté, donc on supprime le vote
+                    yield prisma_1.default.vote.delete({
+                        where: { id: existingVote.id },
+                    });
+                    return res.json({ message: "Vous avez retiré votre vote" });
+                }
+            }
+            catch (err) {
+                console.error(err.message);
+                return res.status(500).send('Erreur du serveur');
             }
         });
     }

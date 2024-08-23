@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma';
 import nodemailer from 'nodemailer'
+
+import UserController from './UserController';
 export default class PostController {
 
     static async createPost(req: Request, res: Response): Promise<void> {
@@ -403,9 +405,11 @@ export default class PostController {
           //   data: {
           //     userId,
           //     type: "story",
-          //     message: `${req.body.prenom} ${req.body.nom} vous a partager un post`,
+          //     
           //   },
           // });
+          let message= `${req.body.prenom} ${req.body.nom} vous a partager un post`
+          UserController.addNotification(Number(userId),message)
         }
   
         res.status(200).json({ message: "Post shared successfully" });
@@ -738,4 +742,126 @@ export default class PostController {
       }
 
   // ... Adaptez les autres méthode
+
+    //---------------------------SIGNALE_POST----------------------------------
+    static async signalPost(req: Request, res: Response): Promise<Response> {
+        const { motif, postId } = req.body;
+    
+        try {
+          if (!motif || !postId) {
+            return res.status(400).send('Veuillez remplir tous les champs');
+          }
+    
+          // Vérifier si l'utilisateur est connecté (supposons que req.user est défini)
+          const userId = req.user?.id;
+          
+          
+          if (!userId) {
+            return res.status(404).send("Vous n'êtes pas connecté");
+          }
+    
+          const user = await prisma.user.findUnique({ where: { id: Number(userId) } });
+    
+          if (!user) {
+            return res.status(404).send("Utilisateur non trouvé");
+          }
+    
+          // Vérifier si le post existe
+          const post = await prisma.post.findUnique({ where: { id: Number(postId) } });
+    
+    
+          if (!post) {
+            return res.status(404).send("Post non trouvé");
+          }
+    
+          // Vérifier si l'utilisateur a déjà signalé le post
+          const signalExists = await prisma.signale.findFirst({
+            where: { userId: Number(userId), postId: Number(postId) }
+          });
+    
+          if (signalExists) {
+            return res.status(400).send("Vous avez déjà signalé ce post");
+          }
+    
+           if (post.expireAt === null) {
+            await prisma.signale.create({
+              data: { motif, userId: Number(userId), postId: Number(postId) }
+            });
+    
+            const signalCount = await prisma.signale.count({
+              where: { postId: Number(postId) }
+            });
+   
+            if (signalCount >= 2) {
+              await prisma.post.delete({ where: { id: Number(postId) } });
+              // Ajouter une notification ici si nécessaire
+              await UserController.addNotification(Number(userId),"Ce post est supprimé en raison de trop de signalement")
+              return res.json({ message: "Post supprimé en raison de trop de signalements" });
+            }
+    
+            return res.json({ message: "Post signalé avec succès" ,data:post});
+          } else {
+            return res.status(400).send("Ce post est expiré et ne peut pas être signalé");
+          }
+        }catch (err: unknown) {
+          if (typeof err === 'object' && err !== null && 'message' in err) {
+            const errorMessage = (err as { message: string }).message;
+            console.error(errorMessage);
+          } else {
+            console.error('Erreur inconnue');
+          }
+          return res.status(500).send("Erreur serveur");
+        }
+      }
+
+      //--------------------------Search_User_Posts------------------------
+  static async findUserOrPost(req: Request, res: Response): Promise<Response> {
+    const { value } = req.body;
+
+    try {
+      if (!value) {
+        return res.status(400).json({ message: 'Veuillez entrer une valeur de recherche' });
+      }
+
+      const users = await prisma.user.findMany({
+        where: {
+          OR: [
+              { nom: { contains: value } },
+              { prenom: { contains: value} }
+          ]
+        }
+      });
+      
+      const posts = await prisma.post.findMany({
+        where: {
+          AND: [
+            { contenu: { contains: value } },
+            { expireAt: null }
+          ]
+        }
+      });
+      
+      if (users.length === 0 && posts.length === 0) {
+        return res.status(404).json({ message: 'Aucun résultat trouvé', Data: null });
+      }
+
+      return res.json({
+        message: 'Résultats trouvés',
+        users:users,
+        posts:posts
+      });
+    }catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'message' in err) {
+        const errorMessage = (err as { message: string }).message;
+        console.error(errorMessage);
+      } else {
+        console.error('Erreur inconnue');
+      }
+      return res.status(500).send("Erreur serveur");
+    }
+  }
+
+  //--------------------------------Delete_Entities------------
+  
+
 }
