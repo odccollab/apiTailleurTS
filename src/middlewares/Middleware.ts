@@ -21,7 +21,8 @@ class Middleware {
                 id: decoded.id,
                 nom: decoded.nom,
                 prenom: decoded.prenom,
-                image: decoded.image
+                image: decoded.image,
+                type: decoded.type
             };
 
             next();
@@ -33,7 +34,7 @@ class Middleware {
     public async canPost(req: Request, res: Response, next: NextFunction) {
         try {
             const userId = req.user?.id;
-            const user = await UserModel.findUnique(userId);
+            const user = await UserModel.findUnique({id:userId});
 
             if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -58,7 +59,7 @@ class Middleware {
             const { error } = schema.safeParse(req.body);
 
             if (error) {
-                return res.status(400).json({ error: error.errors[0].message });
+                return res.status(400).json({ error: error.errors });
             }
 
             next();

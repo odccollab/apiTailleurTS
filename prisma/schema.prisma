@@ -16,11 +16,12 @@ model User {
   id               Int            @id @default(autoincrement())
   nom              String
   prenom           String
-  email            String         @unique
+  mail             String         @unique
   telephone        String         @unique
   type             String
   credit           Int            @default(3)
   password         String
+  image            String?
   votesReceived    Vote[]         @relation("reçus")
   votesCast        Vote[]         @relation("effectue")
   followers        Follower[]     @relation("follower")
@@ -31,10 +32,10 @@ model User {
   sharedPosts      Post[]         @relation("SharedPosts")
   posts            Post[]         @relation("UserPosts")
   favoris          Post[]         @relation("UserFavorites")
-  Comment          Comment[]
-  LikeDislike      LikeDislike[]
-  Signale          Signale[]
-  Viewers          Viewers[]
+  comments         Comment[]
+  likeDislikes     LikeDislike[]
+  signales         Signale[]
+  viewers          Viewers[]
   @@map("user")
 }
 
@@ -42,8 +43,8 @@ model Vote {
   id       Int  @id @default(autoincrement())
   idVoteur Int
   userId   Int
-  voteur   User @relation("reçus", fields: [idVoteur], references: [id], map: "Vote_voteur_fkey")
-  user     User @relation("effectue", fields: [userId], references: [id], map: "Vote_user_fkey")
+  voteur   User @relation("reçus", fields: [idVoteur], references: [id], onDelete: Cascade)
+  user     User @relation("effectue", fields: [userId], references: [id], onDelete: Cascade)
   @@map("vote")
 }
 
@@ -51,8 +52,8 @@ model Follower {
   id         Int  @id @default(autoincrement())
   userId     Int
   followerId Int
-  user       User @relation("following", fields: [userId], references: [id], map: "Follower_user_fkey")
-  follower   User @relation("follower", fields: [followerId], references: [id], map: "Follower_follower_fkey")
+  user       User @relation("following", fields: [userId], references: [id], onDelete: Cascade)
+  follower   User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
   @@map("follower")
 }
 
@@ -62,7 +63,7 @@ model Notification {
   content   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], map: "Notification_user_fkey")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("notification")
 }
 
@@ -72,25 +73,28 @@ model Message {
   receiverId Int
   content    String
   createdAt  DateTime @default(now())
-  sender     User     @relation("sent", fields: [senderId], references: [id], map: "Message_sender_fkey")
-  receiver   User     @relation("received", fields: [receiverId], references: [id], map: "Message_receiver_fkey")
+  sender     User     @relation("sent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("received", fields: [receiverId], references: [id], onDelete: Cascade)
+  from       String?
+  fromId     Int?
   @@map("message")
 }
 
 model Post {
   id           Int          @id @default(autoincrement())
-  content      String
+  contenu      String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  contenuMedia Media[]
-  likeDislike  LikeDislike[]
-  comment      Comment[]
-  signale      Signale[]
-  viewers      Viewers[]
+  expireAt     DateTime?    
+  contenuMedia Media[]      
+  likeDislike  LikeDislike[] 
+  comment      Comment[]    
+  signale      Signale[]    
+  viewers      Viewers[]    
   idUser       Int
-  user         User         @relation("UserPosts", fields: [idUser], references: [id], map: "Post_user_fkey")
+  user         User         @relation("UserPosts", fields: [idUser], references: [id], onDelete: Cascade)
   sharedBy     User[]       @relation("SharedPosts")
-  favoritedBy  User[]       @relation("UserFavorites")
+  favoritedBy  User[]      @relation("UserFavorites")
   @@map("post")
 }
 
@@ -98,7 +102,7 @@ model Media {
   id     Int    @id @default(autoincrement())
   url    String
   postId Int
-  post   Post   @relation(fields: [postId], references: [id], map: "Media_post_fkey")
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@map("media")
 }
 
@@ -108,9 +112,9 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId    Int
-  user      User     @relation(fields: [userId], references: [id], map: "Comment_user_fkey")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   postId    Int
-  post      Post     @relation(fields: [postId], references: [id], map: "Comment_post_fkey")
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@map("comment")
 }
 
@@ -119,8 +123,8 @@ model LikeDislike {
   type   String
   userId Int
   postId Int
-  user   User   @relation(fields: [userId], references: [id], map: "LikeDislike_user_fkey")
-  post   Post   @relation(fields: [postId], references: [id], map: "LikeDislike_post_fkey")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@map("likeDislike")
 }
 
@@ -129,8 +133,8 @@ model Signale {
   motif  String
   userId Int
   postId Int
-  user   User   @relation(fields: [userId], references: [id], map: "Signale_user_fkey")
-  post   Post   @relation(fields: [postId], references: [id], map: "Signale_post_fkey")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@map("signale")
 }
 
@@ -138,7 +142,8 @@ model Viewers {
   id     Int  @id @default(autoincrement())
   userId Int
   postId Int
-  user   User @relation(fields: [userId], references: [id], map: "Viewers_user_fkey")
-  post   Post @relation(fields: [postId], references: [id], map: "Viewers_post_fkey")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@map("viewers")
 }
+
