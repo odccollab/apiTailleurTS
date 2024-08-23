@@ -38,6 +38,6 @@ router.get('/discussion/:otherUserId', Middleware.verifyToken, UserController.ge
 // //avoir profile d'un user par id
 router.get('/profile/:userId',Middleware.verifyToken, UserController.profile);
 //avoir mes notifications
-router.get('/notification',Middleware.verifyToken, UserController.profile);
+router.get('/notification',Middleware.verifyToken, UserController.getNotif);
 
 export default router;      

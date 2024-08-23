@@ -19,21 +19,21 @@ router.delete('/:id', Middleware_1.default.verifyToken, PostController_1.default
 // //ajouter un commentaire les variable requis 
 // // const { postId, commentId } = req.params;
 // //     const { text } = req.body;
-// router.post('/:postId/comment', Middleware.verifyToken, validateData('comment'), PostController.addComment);
+router.post('/:postId/comment', Middleware_1.default.verifyToken, Middleware_1.default.validateData('comment'), PostController_1.default.addComment);
 // //recuperer tous les commentaires d'un post 
-// router.get('/:postId/comment', PostController.getComments);
+router.get('/:postId/comment', PostController_1.default.getComments);
 // //modifier un commentaire  
 // // const { postId, commentId } = req.params;
 // //     const { text } = req.body;
-// router.put('/:postId/comment/:commentId',Middleware.validateData('comment'), PostController.updateComment);
+router.put('/:postId/comment/:commentId', Middleware_1.default.validateData('comment'), PostController_1.default.updateComment);
 // //supprimer un commentaire 
-// router.delete('/:postId/comment/:commentId', PostController.deleteComment);
+router.delete('/:postId/comment/:commentId', PostController_1.default.deleteComment);
 // //story 
 // router.post('/createStory',Middleware.verifyToken,Middleware.validateData("post"),Middleware.canPost, PostController.createStory);
 // // Nouvelles routes pour les vues 
-// router.get('/:postId/view',Middleware.verifyToken, PostController.incrementViews);
+router.get('/:postId/view', Middleware_1.default.verifyToken, PostController_1.default.incrementViews);
 // //voilr les vue d'un post 
-// router.get('/:postId/views',Middleware.verifyToken, PostController.getViews);
+router.get('/:postId/views', Middleware_1.default.verifyToken, PostController_1.default.getViews);
 // //file actu 
 router.get('/accueil', Middleware_1.default.verifyToken, PostController_1.default.fileActu);
 // //liker dislike
