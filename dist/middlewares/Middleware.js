@@ -29,7 +29,8 @@ class Middleware {
                 id: decoded.id,
                 nom: decoded.nom,
                 prenom: decoded.prenom,
-                image: decoded.image
+                image: decoded.image,
+                type: decoded.type
             };
             next();
         }
