@@ -10,11 +10,11 @@ const router = express_1.default.Router();
 // creer un post les variable requis { contenu, contenuMedia }
 router.post('/create', Middleware_1.default.verifyToken, Middleware_1.default.validateData("post"), Middleware_1.default.canPost, PostController_1.default.createPost);
 // //modifier un post les variable requis { contenu, contenuMedia }
-// router.put('/:id',Middleware.verifyToken,Middleware.validateData("post"), PostController.modifyPost);
+router.put('/:postId', Middleware_1.default.verifyToken, Middleware_1.default.validateData("post"), PostController_1.default.modifyPost);
 // //recuperer tous les status 
-// router.get('/status', PostController.getAllStatus);
+//  router.get('/status', PostController.getAllStatus);
 // //delete a post
-// router.delete('/:id',Middleware.verifyToken, PostController.deletePost);
+router.delete('/:id', Middleware_1.default.verifyToken, PostController_1.default.deletePost);
 // //commentaire
 // //ajouter un commentaire les variable requis 
 // // const { postId, commentId } = req.params;
@@ -35,15 +35,15 @@ router.post('/create', Middleware_1.default.verifyToken, Middleware_1.default.va
 // //voilr les vue d'un post 
 // router.get('/:postId/views',Middleware.verifyToken, PostController.getViews);
 // //file actu 
-// router.get('/accueil',Middleware.verifyToken,PostController.fileActu)
+router.get('/accueil', Middleware_1.default.verifyToken, PostController_1.default.fileActu);
 // //liker dislike
-// router.get('/:type/:idpost',Middleware.verifyToken, PostController.handleLikeDislike);
+router.get('/:type/:idpost', Middleware_1.default.verifyToken, PostController_1.default.handleLikeDislike);
 // //partage post a un user de l'appli
-// router.post('/share', PostController.sharePost);
+router.post('/share', PostController_1.default.sharePost);
 // //partage post a un user via email, facebook, whatsapp
-// router.post('/share/email', PostController.shareByEmail);
-// router.post('/share/facebook', PostController.shareOnFacebook);
-// router.post('/share/whatsapp', PostController.shareOnWhatsApp);
+router.post('/share/email', PostController_1.default.shareByEmail);
+router.post('/share/facebook', PostController_1.default.shareOnFacebook);
+router.post('/share/whatsapp', PostController_1.default.shareOnWhatsApp);
 // //signale un use
 //  router.post('/signale',Middleware.verifyToken, PostController.signalPost);
 //  //recherche utilisateur ou post ça prend  {value}
