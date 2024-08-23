@@ -509,7 +509,6 @@ export default class UserController{
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
-
     //----------------ADD_NOTIFICATION----------------------------
     static async addNotification(userId: number, content: string): Promise<void> {
       try {
