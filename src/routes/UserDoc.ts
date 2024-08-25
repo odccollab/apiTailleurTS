@@ -412,3 +412,207 @@
  *       401:
  *         description: Unauthorized
  */
+/**
+ * @swagger
+ * /users/article:
+ *   post:
+ *     summary: Add a new article
+ *     tags: [Articles]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idVendeur
+ *               - libelle
+ *               - prixUnitaire
+ *               - quantiteStock
+ *             properties:
+ *               idVendeur:
+ *                 type: integer
+ *                 description: ID of the seller
+ *               libelle:
+ *                 type: string
+ *                 description: Name of the article
+ *               prixUnitaire:
+ *                 type: number
+ *                 description: Unit price of the article
+ *               quantiteStock:
+ *                 type: integer
+ *                 description: Stock quantity
+ *     responses:
+ *       201:
+ *         description: Article created successfully
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
+ * 
+ *   get:
+ *     summary: Get articles of the connected user
+ *     tags: [Articles]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Articles retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ * 
+ *   put:
+ *     summary: Update an existing article
+ *     tags: [Articles]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idVendeur
+ *               - libelle
+ *               - prixUnitaire
+ *               - quantiteStock
+ *             properties:
+ *               idVendeur:
+ *                 type: integer
+ *                 description: ID of the seller
+ *               libelle:
+ *                 type: string
+ *                 description: Name of the article
+ *               prixUnitaire:
+ *                 type: number
+ *                 description: Unit price of the article
+ *               quantiteStock:
+ *                 type: integer
+ *                 description: Stock quantity
+ *     responses:
+ *       200:
+ *         description: Article updated successfully
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
+ * 
+ *   delete:
+ *     summary: Delete an article
+ *     tags: [Articles]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idArticle
+ *             properties:
+ *               idArticle:
+ *                 type: integer
+ *                 description: ID of the article to delete
+ *     responses:
+ *       200:
+ *         description: Article deleted successfully
+ *       401:
+ *         description: Unauthorized
+ * 
+ * /users/commande:
+ *   post:
+ *     summary: Create a new commande
+ *     tags: [Commandes]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - articles
+ *             properties:
+ *               articles:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     idArticle:
+ *                       type: integer
+ *                     quantite:
+ *                       type: integer
+ *                 description: List of articles in the commande
+ *     responses:
+ *       201:
+ *         description: Commande created successfully
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
+ * 
+ *   get:
+ *     summary: List commandes for a vendor
+ *     tags: [Commandes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Commandes retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ * 
+ * /users/commande/:orderId:
+ *   put:
+ *     summary: Validate a commande
+ *     tags: [Commandes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID of the commande to validate
+ *     responses:
+ *       200:
+ *         description: Commande validated successfully
+ *       401:
+ *         description: Unauthorized
+ * 
+ *   delete:
+ *     summary: Cancel a commande
+ *     tags: [Commandes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID of the commande to cancel
+ *     responses:
+ *       200:
+ *         description: Commande canceled successfully
+ *       401:
+ *         description: Unauthorized
+ * 
+ * /users/commande-c:
+ *   get:
+ *     summary: List commandes for a client
+ *     tags: [Commandes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Commandes retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */

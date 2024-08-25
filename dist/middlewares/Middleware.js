@@ -15,7 +15,27 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
 const SchemaValidation_1 = __importDefault(require("../utils/SchemaValidation"));
+const prisma_1 = __importDefault(require("../prisma"));
 class Middleware {
+    constructor() {
+        this.canValidateOrder = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+            const orderId = parseInt(req.params.orderId, 10);
+            if (!userId || !orderId) {
+                return res.status(401).json({ message: "Utilisateur non authentifié ou commande non spécifiée" });
+            }
+            // Vérifiez si la commande appartient au vendeur spécifié
+            const order = yield prisma_1.default.commande.findUnique({
+                where: { id: orderId },
+                include: { user: true }, // Inclure l'utilisateur (vendeur) pour vérification
+            });
+            if (!order || order.user.id !== +userId) {
+                return res.status(403).json({ message: "Vous n'êtes pas autorisé à valider cette commande" });
+            }
+            next();
+        });
+    }
     verifyToken(req, res, next) {
         var _a;
         try {

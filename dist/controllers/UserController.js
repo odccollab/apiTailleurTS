@@ -66,7 +66,7 @@ class UserController {
                     return;
                 }
                 // Set initial credit based on the user type
-                let credit = type === "tailleur" ? 10 : 3;
+                let credit = type === "client" ? 3 : 10;
                 // Hash the password
                 const hashedPassword = utils_1.default.hashPassword(password);
                 // Create the user
@@ -98,18 +98,24 @@ class UserController {
             if (!userId) {
                 userId = +((_a = req.user) === null || _a === void 0 ? void 0 : _a.id);
             }
-            const user = yield prisma_1.default.user.findUnique({
-                where: { id: userId },
-                select: {
-                    nom: true,
-                    prenom: true,
-                    image: true,
-                    telephone: true,
-                },
-            });
-            const posts = yield PostController_1.default.getPostOrStoryByUser(userId, "post");
-            const stories = yield PostController_1.default.getPostOrStoryByUser(userId, "story");
-            res.status(200).json({ posts, stories, user });
+            try {
+                const user = yield prisma_1.default.user.findUnique({
+                    where: { id: userId },
+                    select: {
+                        nom: true,
+                        prenom: true,
+                        image: true,
+                        telephone: true,
+                        articles: true, // Fetch articles associated with the user
+                    },
+                });
+                const posts = yield PostController_1.default.getPostOrStoryByUser(userId, "post");
+                const stories = yield PostController_1.default.getPostOrStoryByUser(userId, "story");
+                res.status(200).json({ posts, stories, user });
+            }
+            catch (error) {
+                res.status(500).json({ message: "Error fetching profile data", error });
+            }
         });
     }
     static rechargerCompte(req, res) {
@@ -579,7 +585,7 @@ class UserController {
                                 followerId: true // Sélectionne uniquement les IDs des utilisateurs qui suivent cet utilisateur
                             }
                         }
-                    }
+                    },
                 });
                 if (!userConnected) {
                     return res.status(404).send("User connected not found");
@@ -613,7 +619,7 @@ class UserController {
                         userId: +followedId
                     }
                 });
-                return res.json(userToFollow);
+                return res.json("vous avez commence a suivre ce user");
             }
             catch (err) {
                 console.error(err);
@@ -694,6 +700,431 @@ class UserController {
                 console.error(err.message);
                 return res.status(500).send('Erreur du serveur');
             }
+        });
+    }
+    static ajoutArticle(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { libelle, prixUnitaire, quantiteStock, categorie, description } = req.body;
+                const idVendeur = req.user.id; // ID du vendeur à partir de req.user
+                // Créer l'article
+                const article = yield prisma_1.default.article.create({
+                    data: {
+                        libelle,
+                        prixUnitaire,
+                        quantiteStock,
+                        categorie,
+                        description,
+                        idVendeur: +idVendeur,
+                    },
+                });
+                return res.status(201).json(article);
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: "An error occurred while adding the article." });
+            }
+        });
+    }
+    // Méthode pour obtenir les articles du vendeur connecté
+    static getArticle(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const idVendeur = req.user.id; // ID du vendeur à partir de req.user
+                const articles = yield prisma_1.default.article.findMany({
+                    where: {
+                        idVendeur: +idVendeur,
+                    },
+                });
+                return res.status(200).json(articles);
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: "An error occurred while retrieving articles." });
+            }
+        });
+    }
+    // Méthode pour mettre à jour un article
+    static updateArticle(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { id, libelle, prixUnitaire, quantiteStock, categorie, description } = req.body;
+                const idVendeur = req.user.id; // ID du vendeur à partir de req.user
+                // Mettre à jour l'article
+                const article = yield prisma_1.default.article.update({
+                    where: { id },
+                    data: {
+                        libelle,
+                        prixUnitaire,
+                        quantiteStock,
+                        categorie,
+                        description,
+                    },
+                    select: {
+                        id: true,
+                        idVendeur: true,
+                        libelle: true,
+                        prixUnitaire: true,
+                        quantiteStock: true,
+                        categorie: true,
+                        description: true,
+                    },
+                });
+                if (article.idVendeur !== +idVendeur) {
+                    return res.status(403).json({ message: "Unauthorized to update this article." });
+                }
+                return res.status(200).json(article);
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: "An error occurred while updating the article." });
+            }
+        });
+    }
+    // Méthode pour supprimer un article (soft delete)
+    static deleteArticle(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { id } = req.body;
+                const idVendeur = req.user.id; // ID du vendeur à partir de req.user
+                // Vérifiez que l'article appartient au vendeur
+                const article = yield prisma_1.default.article.findUnique({
+                    where: { id },
+                    select: { idVendeur: true },
+                });
+                if (!article || article.idVendeur !== +idVendeur) {
+                    return res.status(403).json({ message: "Unauthorized to delete this article." });
+                }
+                // Supprimer l'article
+                yield prisma_1.default.article.delete({
+                    where: { id },
+                });
+                return res.status(200).json({ message: "Article deleted successfully." });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: "An error occurred while deleting the article." });
+            }
+        });
+    }
+    // Méthode pour créer une commande
+    static createCommande(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { articles } = req.body;
+            const idUser = req.user.id; // Utilisation de l'ID de l'utilisateur à partir de req.user
+            try {
+                // Utilisation d'une transaction pour s'assurer que toutes les opérations sont atomiques
+                const result = yield prisma_1.default.$transaction((prisma) => __awaiter(this, void 0, void 0, function* () {
+                    if (articles.length === 0) {
+                        throw new Error("La commande doit contenir au moins un article");
+                    }
+                    // 1. Obtenir l'ID du vendeur à partir du premier article
+                    const firstArticle = yield prisma.article.findUnique({
+                        where: { id: articles[0].idArticle },
+                        select: { idVendeur: true },
+                    });
+                    if (!firstArticle) {
+                        throw new Error(`Article avec l'ID ${articles[0].idArticle} non trouvé`);
+                    }
+                    const vendeurId = firstArticle.idVendeur;
+                    // 2. Créer la commande
+                    const commande = yield prisma.commande.create({
+                        data: {
+                            idUser: +idUser,
+                            idVendeur: vendeurId, // Ajouter l'ID du vendeur
+                            createdAt: new Date(),
+                            prixTotal: 0, // Initialiser avec 0, nous le mettrons à jour plus tard
+                            etat: "non confirmé", // Etat initial
+                        },
+                    });
+                    let prixTotal = 0;
+                    // 3. Associer les articles et mettre à jour le stock
+                    for (const articleCommande of articles) {
+                        const { idArticle, quantite } = articleCommande;
+                        // Récupérer l'article pour obtenir le prix et vérifier le stock
+                        const article = yield prisma.article.findUnique({
+                            where: { id: idArticle },
+                        });
+                        if (!article || article.quantiteStock < quantite) {
+                            throw new Error(`Stock insuffisant pour l'article avec l'ID ${idArticle}`);
+                        }
+                        // Décrémenter le stock de l'article
+                        yield prisma.article.update({
+                            where: { id: idArticle },
+                            data: {
+                                quantiteStock: article.quantiteStock - quantite,
+                            },
+                        });
+                        // Calculer le montant total pour cet article
+                        prixTotal += article.prixUnitaire * quantite;
+                        // Associer l'article à la commande dans la table de liaison CommandeArticle
+                        yield prisma.commandeArticle.create({
+                            data: {
+                                idCommande: commande.id,
+                                idArticle: idArticle,
+                                quantite: quantite,
+                            },
+                        });
+                    }
+                    // 4. Mettre à jour le montant total de la commande
+                    const updatedCommande = yield prisma.commande.update({
+                        where: { id: commande.id },
+                        data: { prixTotal: prixTotal },
+                    });
+                    return updatedCommande;
+                }));
+                res.status(201).json({
+                    message: 'Commande créée avec succès',
+                    commande: result,
+                });
+            }
+            catch (error) {
+                console.error(error);
+                res.status(500).json({ message: "Erreur lors de la création de la commande: " + error });
+            }
+        });
+    }
+    static orderDuVendeur(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const sellerId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id; // Utilisation de l'ID du vendeur à partir de req.user
+            if (!sellerId) {
+                return res.status(401).json({ message: "Utilisateur non authentifié" });
+            }
+            try {
+                const orders = yield prisma_1.default.commande.findMany({
+                    where: {
+                        idVendeur: +sellerId,
+                    },
+                    include: {
+                        articles: true,
+                        user: {
+                            select: {
+                                nom: true,
+                                prenom: true,
+                                image: true,
+                                telephone: true
+                            }
+                        }
+                    },
+                });
+                res.json(orders);
+            }
+            catch (error) {
+                res.status(500).json({ message: "Erreur lors de la récupération des commandes", error });
+            }
+        });
+    }
+    // Méthode pour valider une commande
+    static validateOrder(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const orderId = parseInt(req.params.orderId, 10);
+            const sellerId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id; // Utilisation de l'ID du vendeur à partir de req.user
+            if (!sellerId) {
+                return res.status(401).json({ message: "Utilisateur non authentifié" });
+            }
+            try {
+                // Vérifiez si la commande appartient bien au vendeur
+                const order = yield prisma_1.default.commande.findUnique({
+                    where: {
+                        id: orderId,
+                    },
+                    include: {
+                        user: true, // Inclure l'utilisateur pour vérification
+                    },
+                });
+                if (!order) {
+                    return res.status(404).json({ message: "Commande non trouvée" });
+                }
+                if (order.idVendeur !== +sellerId) {
+                    return res.status(403).json({ message: "Vous n'êtes pas autorisé à valider cette commande" });
+                }
+                // Déterminer le nouvel état de la commande
+                const newState = order.etat === "validée" ? "non confirmée" : "validée";
+                // Mettre à jour l'état de la commande
+                const updatedOrder = yield prisma_1.default.commande.update({
+                    where: {
+                        id: orderId,
+                    },
+                    data: {
+                        etat: newState, // Modifier l'état de la commande
+                    },
+                });
+                res.json(updatedOrder);
+            }
+            catch (error) {
+                res.status(500).json({ message: "Erreur lors de la validation de la commande", error });
+            }
+        });
+    }
+    // Méthode pour lister les commandes passées par un client
+    static orderDuClient(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const clientId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id; // Utilisation de l'ID du client à partir de req.user
+            if (!clientId) {
+                return res.status(401).json({ message: "Utilisateur non authentifié" });
+            }
+            try {
+                const orders = yield prisma_1.default.commande.findMany({
+                    where: {
+                        idUser: +clientId,
+                    },
+                    include: {
+                        articles: true,
+                        vendeur: {
+                            select: {
+                                nom: true,
+                                prenom: true,
+                                image: true,
+                                telephone: true
+                            }
+                        }
+                    },
+                });
+                res.json(orders);
+            }
+            catch (error) {
+                res.status(500).json({ message: "Erreur lors de la récupération des commandes", error });
+            }
+        });
+    }
+    static sousCancell(orderId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // Find the order including the articles and their quantities
+                const order = yield prisma_1.default.commande.findUnique({
+                    where: {
+                        id: orderId,
+                    },
+                    include: {
+                        articles: {
+                            select: {
+                                idArticle: true,
+                                quantite: true, // Quantité commandée pour chaque article
+                            },
+                        },
+                    },
+                });
+                if (!order) {
+                    throw new Error('Commande non trouvée');
+                }
+                // Return the articles to stock
+                for (const article of order.articles) {
+                    yield prisma_1.default.article.update({
+                        where: { id: article.idArticle },
+                        data: {
+                            quantiteStock: {
+                                increment: article.quantite, // Réajuster le stock en ajoutant la quantité commandée
+                            },
+                        },
+                    });
+                }
+                // Delete the order
+                yield prisma_1.default.commande.delete({
+                    where: { id: order.id },
+                });
+                return { success: true };
+            }
+            catch (error) {
+                console.error('Erreur lors du traitement de la commande:', error);
+                return { success: false, error: error }; // Return error message for clarity
+            }
+        });
+    }
+    static deleteOrderAfter1W() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const now = new Date();
+            const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // Date d'une semaine avant
+            try {
+                // Trouver toutes les commandes non validées et plus anciennes d'une semaine
+                const pendingOrders = yield prisma_1.default.commande.findMany({
+                    where: {
+                        etat: 'non confirmé',
+                        createdAt: {
+                            lt: oneWeekAgo,
+                        },
+                    },
+                });
+                // Traiter chaque commande
+                for (const order of pendingOrders) {
+                    const result = yield UserController.sousCancell(order.id);
+                    if (!result.success) {
+                        console.error(`Erreur lors du traitement de la commande ${order.id}: ${result.error}`);
+                    }
+                }
+            }
+            catch (error) {
+                console.error('Erreur lors du traitement des commandes non validées:', error);
+            }
+        });
+    }
+    static cancelOrder(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const orderId = parseInt(req.params.orderId, 10);
+            const order = yield prisma_1.default.commande.findUnique({
+                where: {
+                    id: orderId,
+                },
+                include: {
+                    articles: {
+                        select: {
+                            idArticle: true,
+                            quantite: true, // Quantité commandée pour chaque article
+                        },
+                    },
+                },
+            });
+            if ((order === null || order === void 0 ? void 0 : order.etat) == "validée") {
+                return res.status(404).json({ message: 'Commande deja validee par le deur appelez le pour que il le remmette a non confirmee ' });
+            }
+            try {
+                const result = yield UserController.sousCancell(orderId);
+                if (!result.success) {
+                    return res.status(500).json({ message: 'Erreur lors de l\'annulation de la commande', error: result.error });
+                }
+                res.json({ message: 'Commande annulée avec succès' });
+            }
+            catch (error) {
+                res.status(500).json({ message: 'Erreur lors de l\'annulation de la commande', error });
+            }
+        });
+    }
+    static deleteExpiredStories() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const now = new Date();
+            yield prisma_1.default.post.deleteMany({
+                where: {
+                    expireAt: {
+                        lte: now,
+                    },
+                },
+            });
+        });
+    }
+    static addCreditsToUsers() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Ajouter des crédits aux utilisateurs 'tailleur'
+            const tailleurUsers = yield prisma_1.default.user.findMany({
+                where: { type: 'tailleur' },
+            });
+            yield Promise.all(tailleurUsers.map((user) => __awaiter(this, void 0, void 0, function* () {
+                yield prisma_1.default.user.update({
+                    where: { id: user.id },
+                    data: { credit: user.credit + 1 },
+                });
+            })));
+            // Ajouter des crédits aux utilisateurs 'vendeur'
+            const vendeurUsers = yield prisma_1.default.user.findMany({
+                where: { type: 'vendeur' },
+            });
+            yield Promise.all(vendeurUsers.map((user) => __awaiter(this, void 0, void 0, function* () {
+                yield prisma_1.default.user.update({
+                    where: { id: user.id },
+                    data: { credit: user.credit + 1 },
+                });
+            })));
         });
     }
 }

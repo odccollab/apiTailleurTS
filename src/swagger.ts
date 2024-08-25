@@ -8,7 +8,7 @@ const swaggerOptions = {
         info: {
             title: 'Your API Title',
             version: '1.0.0',
-            description: 'API Documentation'
+            description: 'API Documentation',
         },
         servers: [
             {
@@ -141,8 +141,36 @@ const swaggerOptions = {
                     },
                     required: ['userId', 'postId'],
                 },
+                Article: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1 },
+                        idVendeur: { type: 'integer', example: 2 },
+                        libelle: { type: 'string', example: 'Article Name' },
+                        prixUnitaire: { type: 'number', example: 100.50 },
+                        quantiteStock: { type: 'integer', example: 20 },
+                    },
+                    required: ['idVendeur', 'libelle', 'prixUnitaire', 'quantiteStock'],
+                },
+                Commande: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1 },
+                        articles: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    idArticle: { type: 'integer', example: 2 },
+                                    quantite: { type: 'integer', example: 3 },
+                                },
+                            },
+                        },
+                    },
+                    required: ['articles'],
+                },
                 // Add other schemas as necessary...
-            }
+            },
         },
         security: [
             {

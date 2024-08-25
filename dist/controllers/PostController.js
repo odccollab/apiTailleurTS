@@ -34,11 +34,11 @@ class PostController {
                 const postData = {
                     contenu,
                     createdAt: new Date(),
-                    user: { connect: { id: userId } }
+                    user: { connect: { id: userId } },
                 };
                 if (contenuMedia && Array.isArray(contenuMedia)) {
                     postData.contenuMedia = {
-                        create: contenuMedia.map((url) => ({ url }))
+                        create: contenuMedia.map((url) => ({ url })),
                     };
                 }
                 if (type === "story") {
@@ -90,7 +90,7 @@ class PostController {
                     include: { contenuMedia: true }, // Inclure les médias associés
                 });
                 if (!post && post.idUser == +((_a = req.user) === null || _a === void 0 ? void 0 : _a.id)) {
-                    return res.status(404).json({ message: 'Post non trouvé' });
+                    return res.status(404).json({ message: "Post non trouvé" });
                 }
                 const updatedPostData = {
                     contenu: contenu || post.contenu,
@@ -106,10 +106,14 @@ class PostController {
                     data: updatedPostData,
                 });
                 console.log("ici");
-                return res.status(200).json({ message: 'Post mis à jour avec succès', post: updatedPost });
+                return res
+                    .status(200)
+                    .json({ message: "Post mis à jour avec succès", post: updatedPost });
             }
             catch (error) {
-                return res.status(500).json({ message: 'Erreur lors de la mise à jour du post', error });
+                return res
+                    .status(500)
+                    .json({ message: "Erreur lors de la mise à jour du post", error });
             }
         });
     }
@@ -133,11 +137,13 @@ class PostController {
                     return res.status(404).json({ message: "Post not found" });
                 }
                 if (post.idUser !== +userId) {
-                    return res.status(403).json({ message: "You are not authorized to delete this post" });
+                    return res
+                        .status(403)
+                        .json({ message: "You are not authorized to delete this post" });
                 }
                 console.log(postId);
                 yield prisma_1.default.post.delete({
-                    where: { id: postId }
+                    where: { id: postId },
                 });
                 return res.json({ message: "Post deleted successfully" });
             }
@@ -211,13 +217,13 @@ class PostController {
             var _a;
             const userId = +((_a = req.user) === null || _a === void 0 ? void 0 : _a.id);
             try {
-                // Fetch posts that don't expire (i.e., regular posts)
+                // Fetch regular posts (not expired) ordered by creation date
                 const posts = yield prisma_1.default.post.findMany({
                     where: {
                         expireAt: null,
                     },
                     orderBy: {
-                        createdAt: 'desc',
+                        createdAt: "desc",
                     },
                     include: {
                         user: {
@@ -234,7 +240,7 @@ class PostController {
                         },
                     },
                 });
-                // Fetch stories (posts that expire)
+                // Fetch stories (expired posts) ordered by expiration date
                 const stories = yield prisma_1.default.post.findMany({
                     where: {
                         expireAt: {
@@ -242,7 +248,7 @@ class PostController {
                         },
                     },
                     orderBy: {
-                        expireAt: 'desc',
+                        expireAt: "desc",
                     },
                     include: {
                         user: {
@@ -259,10 +265,40 @@ class PostController {
                         },
                     },
                 });
-                if (!userId) {
-                    return res.json({ posts, stories });
-                }
-                // Separate sorting operation using toSorted
+                // Get the count of orders for each article
+                const articleCounts = yield prisma_1.default.article.findMany({
+                    select: {
+                        id: true,
+                        _count: {
+                            select: {
+                                commandes: true, // Count of orders for each article
+                            },
+                        },
+                    },
+                });
+                // Create a map of article IDs to their order counts
+                const articleCountMap = new Map();
+                articleCounts.forEach(article => {
+                    articleCountMap.set(article.id, article._count.commandes);
+                });
+                // Fetch all articles
+                const articles = yield prisma_1.default.article.findMany({
+                    include: {
+                        vendeur: {
+                            select: {
+                                nom: true,
+                                prenom: true,
+                                telephone: true,
+                                image: true
+                            }
+                        }
+                    }
+                });
+                // Sort articles based on order count (popularity) using toSorted
+                const sortedArticles = articles.toSorted((a, b) => {
+                    return (articleCountMap.get(b.id) || 0) - (articleCountMap.get(a.id) || 0);
+                });
+                // Sort posts and stories based on whether the user has seen them using toSorted
                 const sortedPosts = posts.toSorted((a, b) => {
                     const aSeen = a.viewers.some(viewer => viewer.userId === userId);
                     const bSeen = b.viewers.some(viewer => viewer.userId === userId);
@@ -272,7 +308,6 @@ class PostController {
                         return -1;
                     return 0;
                 });
-                // Separate sorting operation using toSorted
                 const sortedStories = stories.toSorted((a, b) => {
                     const aSeen = a.viewers.some(viewer => viewer.userId === userId);
                     const bSeen = b.viewers.some(viewer => viewer.userId === userId);
@@ -282,7 +317,8 @@ class PostController {
                         return -1;
                     return 0;
                 });
-                res.json({ posts: sortedPosts, stories: sortedStories });
+                // Return the sorted data
+                res.json({ posts: sortedPosts, stories: sortedStories, articles: sortedArticles });
             }
             catch (err) {
                 console.error(err);
@@ -300,7 +336,7 @@ class PostController {
                         },
                     },
                     orderBy: {
-                        expireAt: 'desc',
+                        expireAt: "desc",
                     },
                     include: {
                         user: {
@@ -324,7 +360,7 @@ class PostController {
                         expireAt: null,
                     },
                     orderBy: {
-                        createdAt: 'desc',
+                        createdAt: "desc",
                     },
                     include: {
                         user: {
@@ -360,8 +396,8 @@ class PostController {
             return yield prisma_1.default.post.findMany({
                 where: whereCondition,
                 orderBy: {
-                    expireAt: type === "story" ? 'desc' : undefined,
-                    createdAt: type === "post" ? 'desc' : undefined,
+                    expireAt: type === "story" ? "desc" : undefined,
+                    createdAt: type === "post" ? "desc" : undefined,
                 },
                 include: {
                     user: {
@@ -400,13 +436,6 @@ class PostController {
                             },
                         },
                     });
-                    // await prisma.notification.create({
-                    //   data: {
-                    //     userId,
-                    //     type: "story",
-                    //     
-                    //   },
-                    // });
                     let message = `${req.body.prenom} ${req.body.nom} vous a partager un post`;
                     UserController_1.default.addNotification(Number(userId), message);
                 }
@@ -492,36 +521,33 @@ class PostController {
             const userIdString = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
             const post = yield prisma_1.default.post.findUnique({
                 where: { id: parseInt(postId, 10) },
-                include: { viewers: true }
+                include: { viewers: true },
             });
             if (!post) {
-                res.status(404).send('Post not found');
+                res.status(404).send("Post not found");
                 return;
             }
             if (!userIdString) {
-                return res.status(400).send('User ID is missing');
+                return res.status(400).send("User ID is missing");
             }
             const userId = parseInt(userIdString, 10);
             if (isNaN(userId)) {
-                return res.status(400).send('Invalid User ID');
+                return res.status(400).send("Invalid User ID");
             }
             try {
-                if (!text || !text.trim()) {
-                    return res.status(400).json({ message: "Le texte du commentaire ne peut pas être vide" });
-                }
                 // Création du nouveau commentaire
                 const newComment = yield prisma_1.default.comment.create({
                     data: {
                         content: text.trim(),
                         userId, // Maintenant c'est un nombre
-                        postId: parseInt(postId, 10)
-                    }
+                        postId: parseInt(postId, 10),
+                    },
                 });
                 res.json(newComment);
             }
             catch (err) {
                 console.error(err);
-                res.status(500).send('Server Error');
+                res.status(500).send("Server Error");
             }
         });
     }
@@ -530,10 +556,10 @@ class PostController {
             const { postId } = req.params;
             const post = yield prisma_1.default.post.findUnique({
                 where: { id: parseInt(postId, 10) },
-                include: { viewers: true }
+                include: { viewers: true },
             });
             if (!post) {
-                res.status(404).send('Post not found');
+                res.status(404).send("Post not found");
                 return;
             }
             try {
@@ -545,19 +571,19 @@ class PostController {
                                 id: true,
                                 nom: true,
                                 prenom: true,
-                                image: true
-                            }
-                        }
+                                image: true,
+                            },
+                        },
                     },
                 });
                 if (!comments.length) {
-                    return res.status(404).send('No comments found for this post');
+                    return res.status(404).send("No comments found for this post");
                 }
                 res.json(comments);
             }
             catch (err) {
                 console.error(err);
-                res.status(500).send('Server Error');
+                res.status(500).send("Server Error");
             }
         });
     }
@@ -566,35 +592,35 @@ class PostController {
             const { postId, commentId } = req.params;
             const { content } = req.body;
             if (!commentId) {
-                return res.status(400).send('Comment ID is missing');
+                return res.status(400).send("Comment ID is missing");
             }
             const post = yield prisma_1.default.post.findUnique({
                 where: { id: parseInt(postId, 10) },
-                include: { viewers: true }
+                include: { viewers: true },
             });
             if (!post) {
-                res.status(404).send('Post not found');
+                res.status(404).send("Post not found");
                 return;
             }
             try {
                 const updatedComment = yield prisma_1.default.comment.update({
                     where: {
                         id: parseInt(commentId, 10), // Convertir commentId en nombre
-                        postId: parseInt(postId, 10) // Convertir postId en nombre
+                        postId: parseInt(postId, 10), // Convertir postId en nombre
                     },
                     data: {
                         content,
-                        updatedAt: new Date()
-                    }
+                        updatedAt: new Date(),
+                    },
                 });
                 if (!updatedComment) {
-                    return res.status(404).send('Comment not found');
+                    return res.status(404).send("Comment not found");
                 }
                 res.json(updatedComment);
             }
             catch (err) {
                 console.error(err);
-                res.status(500).send('Server Error');
+                res.status(500).send("Server Error");
             }
         });
     }
@@ -608,29 +634,29 @@ class PostController {
                     include: { comment: true }, // Changé de 'comments' à 'comment'
                 });
                 if (!post) {
-                    res.status(404).json({ message: 'Post not found' });
+                    res.status(404).json({ message: "Post not found" });
                     return;
                 }
                 // Vérifier si le commentaire existe
                 const comment = yield prisma_1.default.comment.findUnique({
                     where: {
                         id: parseInt(commentId, 10),
-                        postId: parseInt(postId, 10)
+                        postId: parseInt(postId, 10),
                     },
                 });
                 if (!comment) {
-                    res.status(404).json({ message: 'Comment not found' });
+                    res.status(404).json({ message: "Comment not found" });
                     return;
                 }
                 // Supprimer le commentaire
                 yield prisma_1.default.comment.delete({
                     where: { id: comment.id },
                 });
-                res.json({ message: 'Comment deleted' });
+                res.json({ message: "Comment deleted" });
             }
             catch (err) {
                 console.error(err);
-                res.status(500).json({ message: 'Server Error' });
+                res.status(500).json({ message: "Server Error" });
             }
         });
     }
@@ -640,29 +666,29 @@ class PostController {
             const postId = req.params.postId;
             const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
             if (!userId) {
-                res.status(400).send('User ID is missing');
+                res.status(400).send("User ID is missing");
                 return;
             }
             try {
                 // Vérifiez que l'utilisateur existe
                 const user = yield prisma_1.default.user.findUnique({
-                    where: { id: parseInt(userId, 10) }
+                    where: { id: parseInt(userId, 10) },
                 });
                 if (!user) {
-                    res.status(404).send('User not found');
+                    res.status(404).send("User not found");
                     return;
                 }
                 // Vérifiez que le post existe
                 const post = yield prisma_1.default.post.findUnique({
                     where: { id: parseInt(postId, 10) },
-                    include: { viewers: true }
+                    include: { viewers: true },
                 });
                 if (!post) {
-                    res.status(404).send('Post not found');
+                    res.status(404).send("Post not found");
                     return;
                 }
                 // Vérifiez si l'utilisateur a déjà vu le post
-                const viewerExists = post.viewers.some(viewer => viewer.userId === parseInt(userId, 10));
+                const viewerExists = post.viewers.some((viewer) => viewer.userId === parseInt(userId, 10));
                 if (viewerExists) {
                     // Si l'utilisateur a déjà vu le post, renvoyez le nombre de vues
                     res.json({ views: post.viewers.length });
@@ -673,17 +699,17 @@ class PostController {
                     where: { id: parseInt(postId, 10) },
                     data: {
                         viewers: {
-                            create: { userId: parseInt(userId, 10) }
-                        }
+                            create: { userId: parseInt(userId, 10) },
+                        },
                     },
-                    include: { viewers: true }
+                    include: { viewers: true },
                 });
                 // Répondez avec le nombre de vues mises à jour
                 res.json({ views: updatedPost.viewers.length });
             }
             catch (err) {
-                console.error('Server Error:', err);
-                res.status(500).send('Server Error');
+                console.error("Server Error:", err);
+                res.status(500).send("Server Error");
             }
         });
     }
@@ -693,19 +719,19 @@ class PostController {
             try {
                 const post = yield prisma_1.default.post.findUnique({
                     where: { id: parseInt(postId, 10) },
-                    include: { viewers: true }
+                    include: { viewers: true },
                 });
                 if (!post) {
-                    return res.status(404).send('Post not found');
+                    return res.status(404).send("Post not found");
                 }
                 res.json({
                     views: post.viewers.length,
-                    viewerIds: post.viewers.map((viewer) => viewer.id)
+                    viewerIds: post.viewers.map((viewer) => viewer.id),
                 });
             }
             catch (err) {
                 console.error(err);
-                res.status(500).send('Server Error');
+                res.status(500).send("Server Error");
             }
         });
     }
@@ -717,55 +743,63 @@ class PostController {
             const { motif, postId } = req.body;
             try {
                 if (!motif || !postId) {
-                    return res.status(400).send('Veuillez remplir tous les champs');
+                    return res.status(400).send("Veuillez remplir tous les champs");
                 }
                 // Vérifier si l'utilisateur est connecté (supposons que req.user est défini)
                 const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
                 if (!userId) {
                     return res.status(404).send("Vous n'êtes pas connecté");
                 }
-                const user = yield prisma_1.default.user.findUnique({ where: { id: Number(userId) } });
+                const user = yield prisma_1.default.user.findUnique({
+                    where: { id: Number(userId) },
+                });
                 if (!user) {
                     return res.status(404).send("Utilisateur non trouvé");
                 }
                 // Vérifier si le post existe
-                const post = yield prisma_1.default.post.findUnique({ where: { id: Number(postId) } });
+                const post = yield prisma_1.default.post.findUnique({
+                    where: { id: Number(postId) },
+                });
                 if (!post) {
                     return res.status(404).send("Post non trouvé");
                 }
                 // Vérifier si l'utilisateur a déjà signalé le post
                 const signalExists = yield prisma_1.default.signale.findFirst({
-                    where: { userId: Number(userId), postId: Number(postId) }
+                    where: { userId: Number(userId), postId: Number(postId) },
                 });
                 if (signalExists) {
                     return res.status(400).send("Vous avez déjà signalé ce post");
                 }
                 if (post.expireAt === null) {
                     yield prisma_1.default.signale.create({
-                        data: { motif, userId: Number(userId), postId: Number(postId) }
+                        data: { motif, userId: Number(userId), postId: Number(postId) },
                     });
                     const signalCount = yield prisma_1.default.signale.count({
-                        where: { postId: Number(postId) }
+                        where: { postId: Number(postId) },
                     });
                     if (signalCount >= 2) {
                         yield prisma_1.default.post.delete({ where: { id: Number(postId) } });
                         // Ajouter une notification ici si nécessaire
                         yield UserController_1.default.addNotification(Number(userId), "Ce post est supprimé en raison de trop de signalement");
-                        return res.json({ message: "Post supprimé en raison de trop de signalements" });
+                        return res.json({
+                            message: "Post supprimé en raison de trop de signalements",
+                        });
                     }
                     return res.json({ message: "Post signalé avec succès", data: post });
                 }
                 else {
-                    return res.status(400).send("Ce post est expiré et ne peut pas être signalé");
+                    return res
+                        .status(400)
+                        .send("Ce post est expiré et ne peut pas être signalé");
                 }
             }
             catch (err) {
-                if (typeof err === 'object' && err !== null && 'message' in err) {
+                if (typeof err === "object" && err !== null && "message" in err) {
                     const errorMessage = err.message;
                     console.error(errorMessage);
                 }
                 else {
-                    console.error('Erreur inconnue');
+                    console.error("Erreur inconnue");
                 }
                 return res.status(500).send("Erreur serveur");
             }
@@ -777,40 +811,82 @@ class PostController {
             const { value } = req.body;
             try {
                 if (!value) {
-                    return res.status(400).json({ message: 'Veuillez entrer une valeur de recherche' });
+                    return res
+                        .status(400)
+                        .json({ message: "Veuillez entrer une valeur de recherche" });
                 }
+                // Search for users
                 const users = yield prisma_1.default.user.findMany({
                     where: {
-                        OR: [
-                            { nom: { contains: value } },
-                            { prenom: { contains: value } }
-                        ]
-                    }
+                        OR: [{ nom: { contains: value } }, { prenom: { contains: value } }],
+                    },
+                    select: {
+                        id: true,
+                        nom: true,
+                        prenom: true,
+                        image: true,
+                        telephone: true,
+                    },
                 });
+                // Search for posts
                 const posts = yield prisma_1.default.post.findMany({
                     where: {
-                        AND: [
-                            { contenu: { contains: value } },
-                            { expireAt: null }
-                        ]
-                    }
+                        AND: [{ contenu: { contains: value } }, { expireAt: null }],
+                    },
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                nom: true,
+                                prenom: true,
+                                image: true,
+                                telephone: true,
+                            },
+                        },
+                    },
                 });
-                if (users.length === 0 && posts.length === 0) {
-                    return res.status(404).json({ message: 'Aucun résultat trouvé', Data: null });
+                // Search for articles
+                const articles = yield prisma_1.default.article.findMany({
+                    where: {
+                        libelle: { contains: value },
+                    },
+                    select: {
+                        id: true,
+                        libelle: true,
+                        prixUnitaire: true,
+                        quantiteStock: true,
+                        description: true,
+                        categorie: true,
+                        vendeur: {
+                            select: {
+                                id: true,
+                                nom: true,
+                                prenom: true,
+                                image: true,
+                                telephone: true,
+                            },
+                        },
+                    },
+                });
+                if (users.length === 0 && posts.length === 0 && articles.length === 0) {
+                    return res
+                        .status(404)
+                        .json({ message: "Aucun résultat trouvé", Data: null });
                 }
                 return res.json({
-                    message: 'Résultats trouvés',
+                    message: "Résultats trouvés",
                     users: users,
-                    posts: posts
+                    posts: posts,
+                    articles: articles,
                 });
             }
             catch (err) {
-                if (typeof err === 'object' && err !== null && 'message' in err) {
+                if (typeof err === "object" && err !== null && "message" in err) {
                     const errorMessage = err.message;
                     console.error(errorMessage);
                 }
                 else {
-                    console.error('Erreur inconnue');
+                    console.error("Erreur inconnue");
                 }
                 return res.status(500).send("Erreur serveur");
             }

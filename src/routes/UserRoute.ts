@@ -11,7 +11,7 @@ router.get('/profile',Middleware.verifyToken, UserController.profile);
 // //login user ça prend { mail, password }
 router.post('/login2',Middleware.validateData("login"), UserController.loginUser);
 //  //ajouter ou enlever un follower pour un user ça prend  {  followedId }
- router.post('/follow',Middleware.verifyToken, UserController.addFollower);
+router.post('/follow',Middleware.verifyToken, UserController.addFollower);
 // //lister les followers du user connecté
 router.get('/followers', Middleware.verifyToken,UserController.getFollowers);
 // //lister les utilisateurs qui sont followés par le user connecté
@@ -39,5 +39,30 @@ router.get('/discussion/:otherUserId', Middleware.verifyToken, UserController.ge
 router.get('/profile/:userId',Middleware.verifyToken, UserController.profile);
 //avoir mes notifications
 router.get('/notification',Middleware.verifyToken, UserController.getNotif);
+//Article 
+//ajout article {"idVendeur": 1,  "libelle": "Example Article", "prixUnitaire": 100.50,  "quantiteStock": 20}
+router.post('/article',Middleware.verifyToken,Middleware.validateData("article"),Middleware.canPost, UserController.ajoutArticle);
+//avoir mes articles
+router.get('/article',Middleware.verifyToken, UserController.getArticle);
+//modifier article
+router.put('/article',Middleware.verifyToken,Middleware.validateData("article"),Middleware.canPost, UserController.updateArticle);
+//delete article
+router.put('/article',Middleware.verifyToken,Middleware.canPost, UserController.deleteArticle);
+//Commandes
+//ajouter une commande
+router.post('/commande',Middleware.verifyToken,Middleware.validateData("commande"),Middleware.canPost, UserController.createCommande);
+// Route pour lister les commandes pour un vendeur
+router.get('/commande', Middleware.verifyToken, UserController.orderDuVendeur);
+// Route pour valider une commande
+router.put('/commande/:orderId', Middleware.verifyToken, Middleware.canValidateOrder, UserController.validateOrder);
+
+// Route pour lister les commandes d'un client
+router.get('/commande-c', Middleware.verifyToken, UserController.orderDuClient);
+//annuler commande 
+router.delete('/commande/:orderId', Middleware.verifyToken, Middleware.canValidateOrder, UserController.cancelOrder);
+
+
+
+
 
 export default router;      

@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import UserModel from '../models/User';
 import validationSchemas from "../utils/SchemaValidation";
-
+import prisma from "../prisma";
 
 class Middleware {
 
@@ -50,7 +50,7 @@ class Middleware {
 
     public validateData(key: string) {
         return (req: Request, res: Response, next: NextFunction) => {
-            const schema = validationSchemas[key];
+            const schema  = validationSchemas[key];
 
             if (!schema) {
                 return res.status(400).json({ error: "No validation schema found for key: " + key });
@@ -65,6 +65,25 @@ class Middleware {
             next();
         };
     }
+    canValidateOrder = async (req: Request, res: Response, next: NextFunction) => {
+        const userId = req.user?.id;
+        const orderId = parseInt(req.params.orderId, 10);
+      
+        if (!userId || !orderId) {
+          return res.status(401).json({ message: "Utilisateur non authentifié ou commande non spécifiée" });
+        }
+      
+        // Vérifiez si la commande appartient au vendeur spécifié
+        const order = await prisma.commande.findUnique({
+          where: { id: orderId },
+          include: { user: true }, // Inclure l'utilisateur (vendeur) pour vérification
+        });
+        if (!order || order.user.id !== +userId) {
+          return res.status(403).json({ message: "Vous n'êtes pas autorisé à valider cette commande" });
+        }
+      
+        next();
+      };
 }
 
 export default new Middleware();
