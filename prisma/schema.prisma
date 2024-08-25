@@ -36,8 +36,13 @@ model User {
   likeDislikes     LikeDislike[]
   signales         Signale[]
   viewers          Viewers[]
+  articles         Article[]      @relation("VendeurArticles")
+  commandes        Commande[]     @relation("UserCommandes")
+  ventes           Commande[]     @relation("VendeurCommandes")
+
   @@map("user")
 }
+
 
 model Vote {
   id       Int  @id @default(autoincrement())
@@ -45,6 +50,7 @@ model Vote {
   userId   Int
   voteur   User @relation("reçus", fields: [idVoteur], references: [id], onDelete: Cascade)
   user     User @relation("effectue", fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("vote")
 }
 
@@ -54,6 +60,7 @@ model Follower {
   followerId Int
   user       User @relation("following", fields: [userId], references: [id], onDelete: Cascade)
   follower   User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+
   @@map("follower")
 }
 
@@ -64,6 +71,7 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("notification")
 }
 
@@ -77,24 +85,26 @@ model Message {
   receiver   User     @relation("received", fields: [receiverId], references: [id], onDelete: Cascade)
   from       String?
   fromId     Int?
+
   @@map("message")
 }
 
 model Post {
-  id           Int          @id @default(autoincrement())
+  id           Int           @id @default(autoincrement())
   contenu      String
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  expireAt     DateTime?    
-  contenuMedia Media[]      
-  likeDislike  LikeDislike[] 
-  comment      Comment[]    
-  signale      Signale[]    
-  viewers      Viewers[]    
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  expireAt     DateTime?
+  contenuMedia Media[]
+  likeDislike  LikeDislike[]
+  comment      Comment[]
+  signale      Signale[]
+  viewers      Viewers[]
   idUser       Int
-  user         User         @relation("UserPosts", fields: [idUser], references: [id], onDelete: Cascade)
-  sharedBy     User[]       @relation("SharedPosts")
-  favoritedBy  User[]      @relation("UserFavorites")
+  user         User          @relation("UserPosts", fields: [idUser], references: [id], onDelete: Cascade)
+  sharedBy     User[]        @relation("SharedPosts")
+  favoritedBy  User[]        @relation("UserFavorites")
+
   @@map("post")
 }
 
@@ -103,6 +113,7 @@ model Media {
   url    String
   postId Int
   post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
   @@map("media")
 }
 
@@ -115,6 +126,7 @@ model Comment {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   postId    Int
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
   @@map("comment")
 }
 
@@ -125,6 +137,7 @@ model LikeDislike {
   postId Int
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
   @@map("likeDislike")
 }
 
@@ -135,6 +148,7 @@ model Signale {
   postId Int
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
   @@map("signale")
 }
 
@@ -144,6 +158,46 @@ model Viewers {
   postId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
   post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
   @@map("viewers")
 }
 
+model Article {
+  id            Int            @id @default(autoincrement())
+  libelle       String
+  prixUnitaire  Float
+  quantiteStock Int
+  categorie     String
+  description   String?   
+  idVendeur     Int
+  vendeur       User           @relation("VendeurArticles", fields: [idVendeur], references: [id], onDelete: Cascade)
+  commandes     CommandeArticle[] @relation("ArticleCommandes")
+
+  @@map("article")
+}
+
+model Commande {
+  id          Int             @id @default(autoincrement())
+  idUser      Int
+  idVendeur   Int
+  user        User            @relation("UserCommandes", fields: [idUser], references: [id], onDelete: Cascade)
+  vendeur     User            @relation("VendeurCommandes", fields: [idVendeur], references: [id], onDelete: Cascade)
+  articles    CommandeArticle[] @relation("ArticleCommandes")
+  createdAt   DateTime        @default(now())
+  prixTotal   Float           @default(0) 
+  etat        String          @default("non confirmé") 
+
+  @@map("commande")
+}
+
+model CommandeArticle {
+  idCommande Int
+  idArticle  Int
+  quantite   Int
+
+  commande   Commande @relation("ArticleCommandes", fields: [idCommande], references: [id], onDelete: Cascade)
+  article    Article  @relation("ArticleCommandes", fields: [idArticle], references: [id], onDelete: Cascade)
+
+  @@id([idCommande, idArticle]) // Composite primary key
+  @@map("commande_article")
+}

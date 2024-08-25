@@ -42,4 +42,24 @@ router.get('/discussion/:otherUserId', Middleware_1.default.verifyToken, UserCon
 router.get('/profile/:userId', Middleware_1.default.verifyToken, UserController_1.default.profile);
 //avoir mes notifications
 router.get('/notification', Middleware_1.default.verifyToken, UserController_1.default.getNotif);
+//Article 
+//ajout article {"idVendeur": 1,  "libelle": "Example Article", "prixUnitaire": 100.50,  "quantiteStock": 20}
+router.post('/article', Middleware_1.default.verifyToken, Middleware_1.default.validateData("article"), Middleware_1.default.canPost, UserController_1.default.ajoutArticle);
+//avoir mes articles
+router.get('/article', Middleware_1.default.verifyToken, UserController_1.default.getArticle);
+//modifier article
+router.put('/article', Middleware_1.default.verifyToken, Middleware_1.default.validateData("article"), Middleware_1.default.canPost, UserController_1.default.updateArticle);
+//delete article
+router.put('/article', Middleware_1.default.verifyToken, Middleware_1.default.canPost, UserController_1.default.deleteArticle);
+//Commandes
+//ajouter une commande
+router.post('/commande', Middleware_1.default.verifyToken, Middleware_1.default.validateData("commande"), Middleware_1.default.canPost, UserController_1.default.createCommande);
+// Route pour lister les commandes pour un vendeur
+router.get('/commande', Middleware_1.default.verifyToken, UserController_1.default.orderDuVendeur);
+// Route pour valider une commande
+router.put('/commande/:orderId', Middleware_1.default.verifyToken, Middleware_1.default.canValidateOrder, UserController_1.default.validateOrder);
+// Route pour lister les commandes d'un client
+router.get('/commande-c', Middleware_1.default.verifyToken, UserController_1.default.orderDuClient);
+//annuler commande 
+router.delete('/commande/:orderId', Middleware_1.default.verifyToken, Middleware_1.default.canValidateOrder, UserController_1.default.cancelOrder);
 exports.default = router;
